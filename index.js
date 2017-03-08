@@ -72,8 +72,7 @@ function EventSourcedAggregateFactory ({type, getStreamName, initialState, reduc
       getPrototypeOf: () => Aggregate,
       ownKeys: () => ['id', 'type', 'streamName', 'version', 'isDirty'],
       get: (target, prop) => {
-        let targetProp = target[prop]
-        if (targetProp) return targetProp
+        if (target.hasOwnProperty(prop)) return target[prop]
 
         let commandHandler = _commandsHandlers[prop]
         if (commandHandler && typeof commandHandler === 'function') {
@@ -92,4 +91,5 @@ function EventSourcedAggregateFactory ({type, getStreamName, initialState, reduc
 }
 
 module.exports = EventSourcedAggregateFactory
-module.exports.ANY_VERSION = ANY_VERSION
+module.exports.AGGREGATE_SHOULD_EXIST = AGGREGATE_SHOULD_EXIST
+module.exports.ENSURE_VERSION_CONSISTENCY = ENSURE_VERSION_CONSISTENCY
