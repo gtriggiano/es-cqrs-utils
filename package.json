@@ -1,0 +1,19 @@
+{
+  "name": "es-aggregate",
+  "version": "0.0.0",
+  "description": "Factory function to generate event sourced aggregates'constructors",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gtriggiano/es-aggregate.git"
+  },
+  "author": "Giacomo Triggiano <giacomotriggiano@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gtriggiano/es-aggregate/issues"
+  },
+  "homepage": "https://github.com/gtriggiano/es-aggregate#readme"
+}
