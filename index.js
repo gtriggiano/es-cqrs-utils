@@ -76,7 +76,7 @@ function EventSourcedAggregateFactory ({type, getStreamName, initialState, reduc
 
         let commandHandler = _commandsHandlers[prop]
         if (commandHandler && typeof commandHandler === 'function') {
-          return (...commandArgs) => commandHandler(aggregateTarget, ...commandArgs)
+          return (...commandArgs) => commandHandler(_state, ...commandArgs)
         }
       }
     })
