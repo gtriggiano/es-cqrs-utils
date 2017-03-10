@@ -4,7 +4,8 @@ const ENSURE_VERSION_CONSISTENCY = 'EVC'
 function GetAggregateFactory ({type, getStreamName, initialState, reducer, commandsHandlers, serializeState, deserializeState}) {
   let _type = `${type}`
 
-  const Aggregate = function (aggregateId, aggregateSnapshot, aggregateEvents) {
+  let trick = {}
+  trick[_type] = function (aggregateId, aggregateSnapshot, aggregateEvents) {
     let _serializeState = serializeState && typeof serializeState === 'function' ? serializeState : (state) => JSON.stringify(state)
     let _deserializeState = deserializeState && typeof deserializeState === 'function' ? deserializeState : (state) => JSON.parse(state)
 
@@ -41,7 +42,7 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
         }
       }},
       appendEvents: {value: (newEvents) =>
-        Aggregate(
+        trick[_type](
           _id,
           aggregateSnapshot && ({version: _snapshotVersion, state: _snapshotState}),
           aggregateEvents.concat(newEvents)
@@ -66,7 +67,7 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
 
     let aggregateProxy = new Proxy(aggregateTarget, {
       isExtensible: () => false,
-      getPrototypeOf: () => Aggregate,
+      getPrototypeOf: () => trick[_type],
       ownKeys: () => ['id', 'type', 'streamName', 'version', 'isDirty'],
       get: (target, prop) => {
         if (target.hasOwnProperty(prop)) return target[prop]
@@ -85,10 +86,9 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
     return aggregateProxy
   }
 
-  Aggregate.name = _type
-  Aggregate.toString = () => _type
+  trick[_type].toString = () => _type
 
-  return Aggregate
+  return trick[_type]
 }
 
 module.exports = GetAggregateFactory
