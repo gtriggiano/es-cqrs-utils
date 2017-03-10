@@ -23,7 +23,7 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
         _version++
       })
     }
-    let _commandsHandlers = commandsHandlers ? {...commandsHandlers} : {}
+    let _commandsHandlers = commandsHandlers || {}
     let _eventsToPersist = []
     let _persistenceConsistencyPolicy = null
 
@@ -44,13 +44,10 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
         Aggregate(
           _id,
           aggregateSnapshot && ({version: _snapshotVersion, state: _snapshotState}),
-          [
-            ...aggregateEvents,
-            ...newEvents
-          ]
+          aggregateEvents.concat(newEvents)
         )},
       isDirty: {get: () => !!_eventsToPersist.length},
-      eventsToPersist: {get: () => [..._eventsToPersist]},
+      eventsToPersist: {get: () => JSON.parse(JSON.stringify(_eventsToPersist))},
       persistenceConsistencyPolicy: {get: () => _persistenceConsistencyPolicy},
       emit: {value: (event, consistencyPolicy) => {
         _state = reducer(_state, event)
@@ -76,7 +73,11 @@ function GetAggregateFactory ({type, getStreamName, initialState, reducer, comma
 
         let commandHandler = _commandsHandlers[prop]
         if (commandHandler && typeof commandHandler === 'function') {
-          return (...commandArgs) => commandHandler(_state, ...commandArgs)
+          return function () {
+            var args = [].slice.call(arguments)
+            args.unshift(_state)
+            return commandHandler.apply(undefined, args)
+          }
         }
       }
     })
