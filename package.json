@@ -1,5 +1,5 @@
 {
-  "name": "es-aggregate",
+  "name": "es-utils",
   "version": "0.0.0",
   "description": "Factory function to generate event sourced aggregates'constructors",
   "main": "index.js",
