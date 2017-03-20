@@ -1,0 +1,16 @@
+version: '2'
+
+services:
+
+  development:
+    build:
+      context: .
+      dockerfile: docker/Dev.dockerfile
+    image: es-utils-development
+    volumes:
+      - "./.babelrc:/package/.babelrc"
+      - "./src:/package/src"
+      - "./lib:/package/lib"
+      - "./tests:/package/tests"
+      - "./lib-tests:/package/lib-tests"
+      - "./package.json:/package/package.json"

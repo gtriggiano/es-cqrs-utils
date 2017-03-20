@@ -2,18 +2,38 @@
   "name": "es-utils",
   "version": "0.0.0",
   "description": "Factory function to generate event sourced aggregates'constructors",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./commands/test.sh",
+    "dev:test": "./commands/dev:test.sh",
+    "transpile": "./commands/transpile.sh",
+    "prepublish": "npm test"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gtriggiano/es-aggregate.git"
+    "url": "git+https://github.com/gtriggiano/es-utils.git"
   },
   "author": "Giacomo Triggiano <giacomotriggiano@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/gtriggiano/es-aggregate/issues"
+    "url": "https://github.com/gtriggiano/es-utils/issues"
   },
-  "homepage": "https://github.com/gtriggiano/es-aggregate#readme"
+  "homepage": "https://github.com/gtriggiano/es-utils#readme",
+  "dependencies": {
+    "debug": "^2.6.3"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.24.0",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-preset-es2015": "^6.24.0",
+    "mocha": "^3.2.0",
+    "should": "^11.2.1",
+    "sinon": "^2.0.0"
+  },
+  "standard": {
+    "globals": [
+      "describe",
+      "it"
+    ]
+  }
 }
