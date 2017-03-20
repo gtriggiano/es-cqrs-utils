@@ -50,7 +50,7 @@ function runAsService () {
   shift
   local CMD=$@
   if [[ -n "$SERVICE" && -n "$CMD"  ]]; then
-    docker-compose -p $PKG_NAME run $SERVICE $CMD
+    docker-compose -p $PKG_NAME run $SERVICE bash -c "$CMD"
   fi
 }
 
