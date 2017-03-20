@@ -14,4 +14,4 @@ export function DefineError (name) {
   return CustomError
 }
 
-export const validator = Ajv({allErrors: true, removeAdditional: true})
+export const schemaValidator = Ajv({allErrors: true, removeAdditional: true})

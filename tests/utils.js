@@ -1,8 +1,9 @@
 import should from 'should/as-function'
+import Ajv from 'ajv'
 
 const libFolder = `../${process.env.LIB_FOLDER}`
 
-const { DefineError, validator } = require(`${libFolder}/utils`)
+const { DefineError, schemaValidator } = require(`${libFolder}/utils`)
 
 describe('Utils', function () {
   describe('DefineError(errorName)', function () {
@@ -34,6 +35,8 @@ describe('Utils', function () {
     })
   })
   describe('validator', function () {
-
+    it('is an instance of Ajv (https://www.npmjs.com/package/ajv)', () => {
+      should(schemaValidator).be.an.instanceOf(Ajv)
+    })
   })
 })

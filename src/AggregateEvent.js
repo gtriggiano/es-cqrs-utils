@@ -3,7 +3,7 @@ import isEmpty from 'lodash/isEmpty'
 import isFunction from 'lodash/isFunction'
 import Immutable from 'seamless-immutable'
 
-import { DefineError, validator } from './utils'
+import { DefineError, schemaValidator } from './utils'
 
 export default function AggregateEvent ({
   type,
@@ -19,10 +19,10 @@ export default function AggregateEvent ({
   let _deserializeData = deserializeData || JSON.parse
 
   function Event (data) {
-    let validate = schema ? validator.compile(schema) : () => true
+    let validate = schema ? schemaValidator.compile(schema) : () => true
     let isValidData = validate(data)
 
-    if (!isValidData) throw new EventDataNotValidError(validator.errorsText(validate.errors))
+    if (!isValidData) throw new EventDataNotValidError(schemaValidator.errorsText(validate.errors))
 
     let event = {
       type,
@@ -60,7 +60,7 @@ export const _validateEventSettings = ({type, description, reducer, schema, seri
   if (!isFunction(reducer)) throw new TypeError(`reducer MUST be a function`)
 
   if (schema) {
-    validator.compile(schema)
+    schemaValidator.compile(schema)
   }
 
   if (serializeData && !isFunction(serializeData)) throw new TypeError(`serializeData MUST be either 'falsy' or a function, received: ${JSON.stringify(serializeData)}`)
