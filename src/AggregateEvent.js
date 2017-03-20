@@ -5,6 +5,8 @@ import Immutable from 'seamless-immutable'
 
 import { DefineError, schemaValidator } from './utils'
 
+export const EventDataNotValidError = DefineError('EventDataNotValid')
+
 export default function AggregateEvent ({
   type,
   description,
@@ -49,6 +51,8 @@ export default function AggregateEvent ({
   })
 }
 
+AggregateEvent.EventDataNotValidError = EventDataNotValidError
+
 export const _validateEventSettings = ({type, description, reducer, schema, serializeData, deserializeData}) => {
   if (
     !isString(type) ||
@@ -66,5 +70,3 @@ export const _validateEventSettings = ({type, description, reducer, schema, seri
   if (serializeData && !isFunction(serializeData)) throw new TypeError(`serializeData MUST be either 'falsy' or a function, received: ${JSON.stringify(serializeData)}`)
   if (deserializeData && !isFunction(deserializeData)) throw new TypeError(`deserializeData MUST be either 'falsy' or a function, received: ${JSON.stringify(deserializeData)}`)
 }
-
-export const EventDataNotValidError = DefineError('EventDataNotValid')

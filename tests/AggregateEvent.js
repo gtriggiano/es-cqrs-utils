@@ -5,6 +5,14 @@ const libFolder = `../${process.env.LIB_FOLDER}`
 const AggregateEvent = require(`${libFolder}/AggregateEvent`).default
 const EventDataNotValidError = require(`${libFolder}/AggregateEvent`).EventDataNotValidError
 
+describe('AggregateEvent.EventDataNotValidError', () => {
+  it('is a function', () => should(AggregateEvent.EventDataNotValidError).be.a.Function())
+  it('is an Error constructor', () => {
+    let e = new AggregateEvent.EventDataNotValidError()
+    should(e).be.an.instanceOf(Error)
+  })
+})
+
 describe('AggregateEvent(config)', function () {
   it('is a function', () => { should(AggregateEvent).be.a.Function() })
   it('throws if config.type is not a valid string', () => {
@@ -243,7 +251,7 @@ describe('event = Event(data)', () => {
     let e = Event({prop: 'test'})
     should(e.type).equal(Event.type)
   })
-  it('by default event.data has the same shape of data', () => {
+  it('by default event.data has the same shape of data if no config.schema is passed to AggregateEvent(config)', () => {
     let Event = AggregateEvent({
       type: 'Created',
       reducer: () => {}
@@ -251,6 +259,38 @@ describe('event = Event(data)', () => {
     let data = {prop: 'test', list: ['one', 2], map: {k: 1, v: 2}}
     let e = Event(data)
     should(e.data).eql(data)
+  })
+  it('json schema flag `additionalProperties: false` strips out unkown props of data from event.data', () => {
+    let Event = AggregateEvent({
+      type: 'Created',
+      reducer: () => {},
+      schema: {
+        additionalProperties: false,
+        properties: {
+          preserved: {type: 'string'},
+          map: {
+            properties: {
+              preserved: {type: 'number'},
+              preservedToo: {type: 'string'}
+            }
+          }
+        }
+      }
+    })
+    let data = {
+      preserved: 'ok',
+      additional: 'removed',
+      map: {
+        preserved: 1,
+        preservedToo: 'ok'
+      }
+    }
+    let e = Event(data)
+
+    should(e.data.preserved).equal('ok')
+    should(e.data.additional).be.undefined()
+    should(e.data.map.preserved).equal(1)
+    should(e.data.map.preservedToo).equal('ok')
   })
   it('event.data is deeply immutable', () => {
     let Event = AggregateEvent({
