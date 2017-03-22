@@ -6,7 +6,7 @@ const AggregateFactory = require(`${libFolder}/AggregateFactory`).default
 const AggregateMethod = require(`${libFolder}/AggregateMethod`).default
 const AggregateEvent = require(`${libFolder}/AggregateEvent`).default
 
-describe.only('AggregateFactory(config)', () => {
+describe('AggregateFactory(config)', () => {
   it('is a function', () => should(AggregateFactory).be.a.Function())
   it('throws if config.type is not a valid identifier', () => {
     should(() => AggregateFactory({
@@ -28,6 +28,22 @@ describe.only('AggregateFactory(config)', () => {
     })).throw(/type MUST be a valid identifier/)
     should(() => AggregateFactory({
       type: 'myagregate',
+      methods: [],
+      errors: [],
+      events: []
+    })).not.throw()
+  })
+  it('throws if config.description is set and is not a string', () => {
+    should(() => AggregateFactory({
+      type: 'myevent',
+      description: true,
+      methods: [],
+      errors: [],
+      events: []
+    })).throw()
+    should(() => AggregateFactory({
+      type: 'myevent',
+      description: '',
       methods: [],
       errors: [],
       events: []
@@ -201,5 +217,39 @@ describe.only('AggregateFactory(config)', () => {
       events: [],
       deserializeState: () => {}
     })).not.throw()
+  })
+
+  describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
+    it('is a function')
+    it('is an instance of AggregateFactory')
+    it('throws?')
+    it('Aggregate.name === config.type')
+    it('Aggregate.type === config.type')
+    it('Aggregate.description is a string, defaulting to `No description provided`')
+    it('Aggregate.description === config.description, if provided')
+    it('Aggregate.toString() === config.type')
+    it('Aggregate.serializeState defaults to JSON.stringify')
+    it('Aggregate.deserializeState defaults to JSON.parse')
+    it('Aggregate.getStreamName is a function')
+    it('Aggregate.getStreamName(id) === config.getStreamName(config.type, id)')
+
+    describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)', () => {
+      it('is an instance of Aggregate')
+      it('is an instance of AggregateEvent')
+      it('aggregate.id === aggregateId')
+      it('aggregate.type === Aggregate.type')
+      it('aggregate.stream === Aggregate.type')
+      it('aggregate.version is an integer, starting at 0 for aggregates with no events')
+      it('aggregate.Factory === Aggregate')
+      it('aggregate.emit is a proxy')
+      it('aggregate.error is a proxy')
+      it('aggregate.state')
+      it('aggregate.serializedState')
+      it('aggregate.appendEvents')
+      it('aggregate.isDirty')
+      it('aggregate.newEvents')
+      it('aggregate.persistenceConsistencyPolicy')
+      it('aggregate is a proxy which exposes the methods passed to AggregateFactory')
+    })
   })
 })
