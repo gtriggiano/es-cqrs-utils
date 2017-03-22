@@ -13,7 +13,7 @@ describe('AggregateMethod.MethodInputNotValidError', () => {
   })
 })
 
-describe.only('AggregateMethod(config)', () => {
+describe('AggregateMethod(config)', () => {
   it('is a function', () => should(AggregateMethod).be.a.Function())
   it('throws if config.name is not a valid identifier', () => {
     should(() => AggregateMethod({
