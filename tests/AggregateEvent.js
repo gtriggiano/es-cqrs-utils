@@ -6,16 +6,16 @@ const AggregateEvent = require(`${libFolder}/AggregateEvent`).default
 const EventDataNotValidError = require(`${libFolder}/AggregateEvent`).EventDataNotValidError
 
 describe('AggregateEvent.EventDataNotValidError', () => {
-  it('is a function', () => should(AggregateEvent.EventDataNotValidError).be.a.Function())
+  it('is a function', () => should(EventDataNotValidError).be.a.Function())
   it('is an Error constructor', () => {
-    let e = new AggregateEvent.EventDataNotValidError()
+    let e = new EventDataNotValidError()
     should(e).be.an.instanceOf(Error)
   })
 })
 
 describe('AggregateEvent(config)', function () {
   it('is a function', () => { should(AggregateEvent).be.a.Function() })
-  it('throws if config.type is not a valid string', () => {
+  it('throws if config.type is not a valid identifier', () => {
     should(() => AggregateEvent({
       reducer: () => {}
     })).throw()
@@ -23,6 +23,26 @@ describe('AggregateEvent(config)', function () {
       type: '',
       reducer: () => {}
     })).throw()
+    should(() => AggregateEvent({
+      type: 'a not valid identifier',
+      reducer: () => {}
+    })).throw()
+    should(() => AggregateEvent({
+      type: '0bad',
+      reducer: () => {}
+    })).throw()
+    should(() => AggregateEvent({
+      type: ':bad',
+      reducer: () => {}
+    })).throw()
+    should(() => AggregateEvent({
+      type: '.bad',
+      reducer: () => {}
+    })).throw()
+    should(() => AggregateEvent({
+      type: 'good',
+      reducer: () => {}
+    })).not.throw()
   })
   it('throws if config.description is set and is not a string', () => {
     should(() => AggregateEvent({

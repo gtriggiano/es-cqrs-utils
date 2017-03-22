@@ -3,7 +3,7 @@ import isEmpty from 'lodash/isEmpty'
 import isFunction from 'lodash/isFunction'
 import Immutable from 'seamless-immutable'
 
-import { DefineError, schemaValidator } from './utils'
+import { DefineError, schemaValidator, isValidIdentifier } from './utils'
 
 export const EventDataNotValidError = DefineError('EventDataNotValid')
 
@@ -51,13 +51,8 @@ export default function AggregateEvent ({
   })
 }
 
-AggregateEvent.EventDataNotValidError = EventDataNotValidError
-
 export const _validateEventSettings = ({type, description, reducer, schema, serializeData, deserializeData}) => {
-  if (
-    !isString(type) ||
-    isEmpty(type)
-  ) throw new TypeError(`type MUST be a non empty string, received: ${JSON.stringify(type)}`)
+  if (!isValidIdentifier(type)) throw new TypeError(`type MUST be a a valid identifier string (see https://mathiasbynens.be/notes/javascript-identifiers-es6), received: ${JSON.stringify(type)}`)
 
   if (description && !isString(description)) throw new TypeError(`description MUST be either falsy or a string`)
 
