@@ -3,9 +3,9 @@ import isEmpty from 'lodash/isEmpty'
 import isFunction from 'lodash/isFunction'
 import Immutable from 'seamless-immutable'
 
-import { DefineError, schemaValidator } from './utils'
+import { DefineError, schemaValidator, isValidIdentifier } from './utils'
 
-export const CommandInputNotValidError = DefineError('CommandInputNotValid')
+export const MethodInputNotValidError = DefineError('CommandInputNotValid')
 
 export default function AggregateMethod ({
   name,
@@ -25,17 +25,15 @@ export default function AggregateMethod ({
       let validate = inputSchema ? schemaValidator.compile(inputSchema) : () => true
       let isValidInput = validate(input)
 
-      if (!isValidInput) throw new CommandInputNotValidError(schemaValidator.errorsText(validate.errors))
+      if (!isValidInput) throw new MethodInputNotValidError(schemaValidator.errorsText(validate.errors))
 
       return Immutable(input)
     }}
   })
 }
 
-AggregateMethod.CommandInputNotValidError = CommandInputNotValidError
-
 export const _validateCommandSettings = ({name, description, inputSchema, handler}) => {
-  if (!isString(name) || isEmpty(name)) throw new TypeError(`name MUST be a non empty string, received: ${JSON.stringify(name)}`)
+  if (!isValidIdentifier(name)) throw new TypeError(`name MUST be a a valid identifier string (see https://mathiasbynens.be/notes/javascript-identifiers-es6), received: ${JSON.stringify(name)}`)
 
   if (description && !isString(description)) throw new TypeError(`description MUST be either falsy or a string`)
 

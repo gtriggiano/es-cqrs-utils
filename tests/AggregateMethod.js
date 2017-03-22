@@ -3,22 +3,46 @@ import should from 'should/as-function'
 const libFolder = `../${process.env.LIB_FOLDER}`
 
 const AggregateMethod = require(`${libFolder}/AggregateMethod`).default
-const CommandInputNotValidError = require(`${libFolder}/AggregateMethod`).CommandInputNotValidError
+const MethodInputNotValidError = require(`${libFolder}/AggregateMethod`).MethodInputNotValidError
 
-describe('AggregateMethod.CommandInputNotValidError', () => {
-  it('is a function', () => should(AggregateMethod.CommandInputNotValidError).be.a.Function())
+describe('AggregateMethod.MethodInputNotValidError', () => {
+  it('is a function', () => should(MethodInputNotValidError).be.a.Function())
   it('is an Error constructor', () => {
-    let e = new AggregateMethod.CommandInputNotValidError()
+    let e = new MethodInputNotValidError()
     should(e).be.an.instanceOf(Error)
   })
 })
 
-describe('AggregateMethod(config)', () => {
+describe.only('AggregateMethod(config)', () => {
   it('is a function', () => should(AggregateMethod).be.a.Function())
-  it('throws if config.name is not a valid string', () => {
+  it('throws if config.name is not a valid identifier', () => {
     should(() => AggregateMethod({
       handler: () => {}
     })).throw()
+    should(() => AggregateMethod({
+      name: '',
+      handler: () => {}
+    })).throw()
+    should(() => AggregateMethod({
+      name: 'a not valid identifier',
+      handler: () => {}
+    })).throw()
+    should(() => AggregateMethod({
+      name: '0bad',
+      handler: () => {}
+    })).throw()
+    should(() => AggregateMethod({
+      name: ':bad',
+      handler: () => {}
+    })).throw()
+    should(() => AggregateMethod({
+      name: '.bad',
+      handler: () => {}
+    })).throw()
+    should(() => AggregateMethod({
+      name: 'good',
+      handler: () => {}
+    })).not.throw()
   })
   it('throws if config.description is truthy and is not a string', () => {
     should(() => {
@@ -117,8 +141,72 @@ describe('AggregateMethod(config)', () => {
       })
       should(method.parseInput).be.a.Function()
     })
-    it('method.parseInput(input) throws if input is not valid according to config.inputSchema')
-    it('method.parseInput(input) returns an immutable version of input')
-    it('json schema flag `additionalProperties: false` strips out unknown props from the immutable input returned by method.parseInput(input)')
+    it('method.parseInput(input) throws if input is not valid according to config.inputSchema', () => {
+      let method = AggregateMethod({
+        name: 'mymethod',
+        handler: () => {},
+        inputSchema: {
+          properties: {
+            first: {type: 'string'}
+          },
+          required: ['first']
+        }
+      })
+
+      should(() => method.parseInput({})).throw()
+      should(() => method.parseInput({first: 1})).throw()
+      should(() => method.parseInput({first: 'one'})).not.throw()
+    })
+    it('method.parseInput(input) returns an immutable deep clone of input', () => {
+      let method = AggregateMethod({
+        name: 'mymethod',
+        handler: () => {}
+      })
+
+      let input = {first: 'one', map: {first: 1, list: [1, 2, 3]}}
+      let parsedInput = method.parseInput(input)
+
+      should(parsedInput).not.equal(input)
+      should(parsedInput).eql(input)
+      should(() => {
+        parsedInput.first = 1
+      }).throw(/Cannot assign to read only property 'first'/)
+      should(() => {
+        parsedInput.map.first = 'one'
+      }).throw(/Cannot assign to read only property 'first'/)
+      should(() => {
+        parsedInput.map.list[0] = 'one'
+      }).throw(/Cannot assign to read only property '0'/)
+    })
+    it('json schema flag `additionalProperties: false` strips out unknown props from the immutable input returned by method.parseInput(input)', () => {
+      let method = AggregateMethod({
+        name: 'mymethod',
+        handler: () => {},
+        inputSchema: {
+          additionalProperties: false,
+          properties: {
+            first: {type: 'string'},
+            second: {
+              properties: {
+                first: {type: 'string'}
+              }
+            }
+          }
+        }
+      })
+
+      let input = {
+        first: 'one',
+        second: {
+          first: 'one',
+          second: 'two'
+        },
+        third: 'three'
+      }
+      let parsedInput = method.parseInput(input)
+
+      should(parsedInput.third).be.undefined()
+      should(parsedInput.second.second).equal('two')
+    })
   })
 })
