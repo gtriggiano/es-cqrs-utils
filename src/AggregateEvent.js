@@ -35,7 +35,7 @@ export default function AggregateEvent ({
     return Object.freeze(Object.defineProperty(event, 'serializedData', {get: () => _serializeData(event.data)}))
   }
 
-  function eventFromSerializedData (serializedData) {
+  function _eventFromSerializedData (serializedData) {
     return Event(_deserializeData(serializedData))
   }
 
@@ -47,7 +47,7 @@ export default function AggregateEvent ({
     description: {value: description || 'No description provided'},
     toString: {value: () => type},
     reducer: {value: reducer},
-    fromSerializedData: {value: eventFromSerializedData}
+    fromSerializedData: {value: _eventFromSerializedData}
   })
 }
 
