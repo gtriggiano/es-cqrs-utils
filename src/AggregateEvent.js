@@ -26,13 +26,13 @@ export default function AggregateEvent ({
 
     if (!isValidData) throw new EventDataNotValidError(schemaValidator.errorsText(validate.errors))
 
-    let event = {
-      type,
-      data: Immutable(data)
-    }
-
+    let event = {}
     Object.setPrototypeOf(event, Event.prototype)
-    return Object.seal(Object.defineProperty(event, 'serializedData', {get: () => _serializeData(event.data)}))
+    return Object.seal(Object.defineProperties(event, {
+      type: {value: type, enumerable: true},
+      data: {value: Immutable(data), enumerable: true},
+      serializedData: {get: () => _serializeData(event.data)}
+    }))
   }
 
   function _eventFromSerializedData (serializedData) {
