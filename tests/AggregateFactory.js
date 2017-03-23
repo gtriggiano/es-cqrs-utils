@@ -472,7 +472,7 @@ describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
   })
 })
 
-describe.only('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)', () => {
+describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)', () => {
   it('is an instance of Aggregate', () => {
     let Aggregate = AggregateFactory({
       type: 'myaggregate',
