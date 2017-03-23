@@ -12,7 +12,7 @@ export default function AggregateMethod ({
   inputSchema,
   handler
 }) {
-  _validateCommandSettings({name, description, inputSchema, handler})
+  _validateMethodSettings({name, description, inputSchema, handler})
 
   let method = {}
   Object.setPrototypeOf(method, AggregateMethod.prototype)
@@ -31,7 +31,7 @@ export default function AggregateMethod ({
   })
 }
 
-export const _validateCommandSettings = ({name, description, inputSchema, handler}) => {
+export const _validateMethodSettings = ({name, description, inputSchema, handler}) => {
   if (!isValidIdentifier(name)) throw new TypeError(`name MUST be a a valid identifier string (see https://mathiasbynens.be/notes/javascript-identifiers-es6), received: ${JSON.stringify(name)}`)
 
   if (description && !isString(description)) throw new TypeError(`description MUST be either falsy or a string`)
