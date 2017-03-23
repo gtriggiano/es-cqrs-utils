@@ -743,17 +743,278 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
   })
 })
 
-describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) an side effects', () => {
-  it('throws if data is not valid according to the schema passed to the AggregateEvent factory')
-  it('evt is an instance of AggregateEvent')
-  it('evt is an instance of SomethingHappened')
-  it(`evt.type === 'SomethingHappened'`)
-  it('evt.data is immutable')
-  it('aggregate.version does not change')
-  it('aggregate.isDirty resolves to true from here on')
-  it('aggregate computes a new internal state passing the event to the aggregate\'s internal reducer')
-  it('evt is added to aggregate.newEvents collection')
-  it('if consistencyPolicy === ENSURE_VERSION_CONSISTENCY aggregate.persistenceConsistencyPolicy is ensured to be that from here on')
-  it('if consistencyPolicy === AGGREGATE_SHOULD_EXIST aggregate.persistenceConsistencyPolicy is ensured to be that from here on, unless it is already set to ENSURE_VERSION_CONSISTENCY and until an event is emitted with a ENSURE_VERSION_CONSISTENCY consistencyPolicy')
-  it('a value of consistencyPolicy different from ENSURE_VERSION_CONSISTENCY or AGGREGATE_SHOULD_EXIST is ignored')
+describe.only('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and side effects', () => {
+  it('throws \'EventDataNotValidError\' if data is not valid according to the schema passed to the AggregateEvent factory', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          schema: {
+            properties: {
+              a: {type: 'string'}
+            },
+            required: ['a']
+          },
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(() => {
+      aggregate.emit.SomethingHappened({})
+    }).throw(EventDataNotValidError)
+  })
+  it('evt is an instance of AggregateEvent', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.emit.SomethingHappened()).be.an.instanceOf(AggregateEvent)
+  })
+  it('evt is an instance of SomethingHappened', () => {
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: () => {}
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.emit.SomethingHappened()).be.an.instanceOf(SomethingHappenedEvent)
+  })
+  it('evt is immutable', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    let evt = aggregate.emit.SomethingHappened({a: 1})
+    should(() => {
+      evt.type = 'mutated'
+    }).throw(new RegExp('^Cannot assign to read only property \'type\''))
+    should(() => {
+      evt.data = 'mutated'
+    }).throw(new RegExp('^Cannot assign to read only property \'data\''))
+    should(() => {
+      evt.a = 'new prop'
+    }).throw(new RegExp('^Can\'t add property a, object is not extensible$'))
+  })
+  it(`evt.type === 'SomethingHappened'`, () => {
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: () => {}
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    let evt = aggregate.emit.SomethingHappened()
+    should(evt.type).equal('SomethingHappened')
+  })
+  it('evt.data is immutable', () => {
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: () => {}
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    let evt = aggregate.emit.SomethingHappened({a: 1})
+    should(evt.data).eql({a: 1})
+    should(() => {
+      evt.data.a = 1
+    }).throw(new RegExp('Cannot assign to read only property \'a\''))
+    should(() => {
+      evt.data.b = 1
+    }).throw(new RegExp('Can\'t add property b, object is not extensible'))
+    should(() => {
+      evt.data.b = 1
+    }).throw(new RegExp('Can\'t add property b, object is not extensible'))
+  })
+  it('aggregate.version does not change', () => {
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: () => {}
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.version).equal(0)
+    aggregate.emit.SomethingHappened({a: 1})
+    should(aggregate.version).equal(0)
+  })
+  it('aggregate.isDirty resolves to true from here on', () => {
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: () => {}
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.isDirty).be.False()
+    aggregate.emit.SomethingHappened({a: 1})
+    should(aggregate.isDirty).be.True()
+  })
+  it('aggregate computes a new internal state passing the event to the aggregate\'s internal reducer', () => {
+    let now = Date.now()
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: (state, data) => ({
+        thingsHappened: state.thingsHappened + 1,
+        lastThingDateMsFromEpoch: data.when
+      })
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {
+        thingsHappened: 0,
+        lastThingDateMsFromEpoch: null
+      },
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.state.thingsHappened).equal(0)
+    should(aggregate.state.lastThingDateMsFromEpoch).be.Null()
+    aggregate.emit.SomethingHappened({when: now})
+    should(aggregate.state.thingsHappened).equal(1)
+    should(aggregate.state.lastThingDateMsFromEpoch).equal(now)
+  })
+  it('evt is added to aggregate.newEvents collection', () => {
+    let now = Date.now()
+    let SomethingHappenedEvent = AggregateEvent({
+      type: 'SomethingHappened',
+      reducer: (state, data) => ({
+        thingsHappened: state.thingsHappened + 1,
+        lastThingDateMsFromEpoch: data.when
+      })
+    })
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {
+        thingsHappened: 0,
+        lastThingDateMsFromEpoch: null
+      },
+      methods: [],
+      errors: [],
+      events: [
+        SomethingHappenedEvent
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.emit.SomethingHappened({when: now})
+    should(aggregate.newEvents.length).equal(1)
+    should(aggregate.newEvents[0]).containEql({
+      type: 'SomethingHappened',
+      data: {
+        when: now
+      }
+    })
+  })
+  it('if consistencyPolicy === ENSURE_VERSION_CONSISTENCY aggregate.persistenceConsistencyPolicy is ensured to be that from here on', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {},
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.persistenceConsistencyPolicy).be.Null()
+    aggregate.emit.SomethingHappened({}, ENSURE_VERSION_CONSISTENCY)
+    should(aggregate.persistenceConsistencyPolicy).equal(ENSURE_VERSION_CONSISTENCY)
+  })
+  it('if consistencyPolicy === AGGREGATE_SHOULD_EXIST aggregate.persistenceConsistencyPolicy is ensured to be that from here on, unless it is already set to ENSURE_VERSION_CONSISTENCY and until an event is emitted with a ENSURE_VERSION_CONSISTENCY consistencyPolicy', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {},
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    should(aggregate.persistenceConsistencyPolicy).be.Null()
+    aggregate.emit.SomethingHappened({}, AGGREGATE_SHOULD_EXIST)
+    should(aggregate.persistenceConsistencyPolicy).equal(AGGREGATE_SHOULD_EXIST)
+    aggregate.emit.SomethingHappened({}, ENSURE_VERSION_CONSISTENCY)
+    should(aggregate.persistenceConsistencyPolicy).equal(ENSURE_VERSION_CONSISTENCY)
+    aggregate.emit.SomethingHappened({}, AGGREGATE_SHOULD_EXIST)
+    should(aggregate.persistenceConsistencyPolicy).equal(ENSURE_VERSION_CONSISTENCY)
+  })
+  it('a value of consistencyPolicy different from ENSURE_VERSION_CONSISTENCY or AGGREGATE_SHOULD_EXIST is ignored', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {},
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.emit.SomethingHappened({}, 'foobarPolicy')
+    should(aggregate.persistenceConsistencyPolicy).be.Null()
+  })
 })
