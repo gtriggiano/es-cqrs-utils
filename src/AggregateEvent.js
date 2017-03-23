@@ -32,7 +32,7 @@ export default function AggregateEvent ({
     }
 
     Object.setPrototypeOf(event, Event.prototype)
-    return Object.freeze(Object.defineProperty(event, 'serializedData', {get: () => _serializeData(event.data)}))
+    return Object.seal(Object.defineProperty(event, 'serializedData', {get: () => _serializeData(event.data)}))
   }
 
   function _eventFromSerializedData (serializedData) {
