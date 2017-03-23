@@ -21,7 +21,8 @@ export default function AggregateFactory ({
   errors,
   events,
   serializeState,
-  deserializeState
+  deserializeState,
+  snapshotThreshold
 }) {
   _validateFactorySettings({
     type,
@@ -32,7 +33,8 @@ export default function AggregateFactory ({
     errors,
     events,
     serializeState,
-    deserializeState
+    deserializeState,
+    snapshotThreshold
   })
 
   let _serializeState = (state) => {
@@ -87,6 +89,9 @@ export default function AggregateFactory ({
     let _state = aggregateSnapshot
       ? _deserializeState(aggregateSnapshot.state)
       : initialState
+    let _needsSnapshot = snapshotThreshold &&
+      aggregateEvents &&
+      aggregateEvents.length >= snapshotThreshold
 
     if (aggregateEvents) {
       aggregateEvents.forEach((event) => {
@@ -128,6 +133,7 @@ export default function AggregateFactory ({
       type: {value: type, enumerable: true},
       stream: {value: _streamName, enumerable: true},
       version: {value: _version, enumerable: true},
+      needsSnapshot: {value: _needsSnapshot},
       Factory: {value: Aggregate},
       emit: {value: aggregateEventsEmitters},
       error: {value: aggregateErrorsConstructors},
@@ -189,7 +195,8 @@ export const _validateFactorySettings = ({
   errors,
   events,
   serializeState,
-  deserializeState
+  deserializeState,
+  snapshotThreshold
 }) => {
   if (!isValidIdentifier(type)) throw new TypeError(`type MUST be a valid identifier, received: ${JSON.stringify(type)}`)
 
@@ -229,4 +236,8 @@ export const _validateFactorySettings = ({
     deserializeState &&
     !isFunction(deserializeState)
   ) throw new TypeError(`deserializeState MUST be either 'falsy' or a function, received: ${JSON.stringify(deserializeState)}`)
+
+  if (snapshotThreshold &&
+    (!isInteger(snapshotThreshold) || snapshotThreshold < 1)
+  ) throw new TypeError('snapshotThreshold MUST be either falsy or an integer >= 1')
 }
