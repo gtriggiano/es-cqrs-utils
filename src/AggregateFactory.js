@@ -22,7 +22,8 @@ export default function AggregateFactory ({
   events,
   serializeState,
   deserializeState,
-  snapshotThreshold
+  snapshotThreshold,
+  snapshotPrefix
 }) {
   _validateFactorySettings({
     type,
@@ -34,7 +35,8 @@ export default function AggregateFactory ({
     events,
     serializeState,
     deserializeState,
-    snapshotThreshold
+    snapshotThreshold,
+    snapshotPrefix
   })
 
   let _serializeState = (state) => {
@@ -134,6 +136,7 @@ export default function AggregateFactory ({
       stream: {value: _streamName, enumerable: true},
       version: {value: _version, enumerable: true},
       needsSnapshot: {value: _needsSnapshot},
+      snapshotKey: {value: snapshotPrefix ? `${snapshotPrefix}::${_streamName}` : _streamName},
       Factory: {value: Aggregate},
       emit: {value: aggregateEventsEmitters},
       error: {value: aggregateErrorsConstructors},
@@ -196,7 +199,8 @@ export const _validateFactorySettings = ({
   events,
   serializeState,
   deserializeState,
-  snapshotThreshold
+  snapshotThreshold,
+  snapshotPrefix
 }) => {
   if (!isValidIdentifier(type)) throw new TypeError(`type MUST be a valid identifier, received: ${JSON.stringify(type)}`)
 
@@ -240,4 +244,8 @@ export const _validateFactorySettings = ({
   if (snapshotThreshold &&
     (!isInteger(snapshotThreshold) || snapshotThreshold < 1)
   ) throw new TypeError('snapshotThreshold MUST be either falsy or an integer >= 1')
+
+  if (snapshotPrefix &&
+    (!isString(snapshotPrefix) || /\s/.test(snapshotPrefix))
+  ) throw new TypeError('snapshotPrefix MUST be either falsy or a string without spaces')
 }

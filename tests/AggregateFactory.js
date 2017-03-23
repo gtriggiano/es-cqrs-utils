@@ -239,6 +239,31 @@ describe('AggregateFactory(config)', () => {
       snapshotThreshold: -1
     })).throw(new RegExp('snapshotThreshold MUST be either falsy or an integer >= 1'))
   })
+  it('throws if config.snapshotPrefix is truthy and is not a string', () => {
+    should(() => AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [],
+      snapshotPrefix: true
+    })).throw(new RegExp('^snapshotPrefix MUST be either falsy or a string without spaces$'))
+
+    should(() => AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [],
+      snapshotPrefix: 'a prefix'
+    })).throw(new RegExp('^snapshotPrefix MUST be either falsy or a string without spaces$'))
+
+    should(() => AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: [],
+      snapshotPrefix: 'aPrefix'
+    })).not.throw()
+  })
 })
 
 describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
@@ -469,7 +494,7 @@ describe.only('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEv
     should(aggregate).be.an.instanceOf(AggregateFactory)
   })
 
-  it('props [id, type, stream, version, needsSnapshot, Factory, emit, error, appendEvents] are read only', () => {
+  it('props [id, type, stream, version, needsSnapshot, snapshotKey, Factory, emit, error, appendEvents] are read only', () => {
     let Aggregate = AggregateFactory({
       type: 'myaggregate',
       methods: [],
@@ -478,7 +503,7 @@ describe.only('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEv
     })
     let aggregate = Aggregate('xyz')
 
-    let readOnlyProps = ['id', 'type', 'stream', 'version', 'needsSnapshot', 'Factory', 'emit', 'error', 'appendEvents']
+    let readOnlyProps = ['id', 'type', 'stream', 'version', 'needsSnapshot', 'snapshotKey', 'Factory', 'emit', 'error', 'appendEvents']
     readOnlyProps.forEach((prop) => should(() => {
       aggregate[prop] = 'x'
     }).throw(new RegExp(`^Cannot assign to read only property '${prop}'`)))
@@ -636,6 +661,17 @@ describe.only('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEv
 
     let aggregate2 = Aggregate('xyz', null, [{type: 'x', data: ''}, {type: 'x', data: ''}])
     should(aggregate2.needsSnapshot).be.True()
+  })
+  it('aggregate.snapshotKey is equal to aggregate.stream, prefixed by (config.snapshotPrefix + \'::\') if a valid config.snapshotPrefix has been previously passed to AggregateFactory', () => {
+    let Aggregate = AggregateFactory({
+      type: 'myaggregate',
+      methods: [],
+      errors: [],
+      events: [],
+      snapshotPrefix: 'prefix'
+    })
+    let aggregate = Aggregate('xyz')
+    should(aggregate.snapshotKey).equal('prefix::myaggregate::xyz')
   })
   it('aggregate.Factory === Aggregate\n', () => {
     let Aggregate = AggregateFactory({
