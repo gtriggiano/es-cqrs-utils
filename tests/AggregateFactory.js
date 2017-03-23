@@ -232,13 +232,13 @@ describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
     errors: [],
     events: []
   })).be.a.Function())
-  it('is an instance of AggregateFactory', () => should(AggregateFactory({
+  it('is an instance of AggregateFactory\n', () => should(AggregateFactory({
     type: 'myaggregate',
     methods: [],
     errors: [],
     events: []
   })).be.an.instanceOf(AggregateFactory))
-  it('throws?')
+
   it('Aggregate.name === config.type', () => {
     let Aggregate = AggregateFactory({
       type: 'myaggregate',
@@ -326,7 +326,7 @@ describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
     should(Aggregate.getStreamName('xyz')).equal('myaggregate::xyz')
     should(Aggregate.getStreamName()).equal('myaggregate')
   })
-  it('Aggregate.getStreamName(id) === config.getStreamName(config.type, id) || Aggregate.getStreamName(id) === config.getStreamName', () => {
+  it('Aggregate.getStreamName(id) === config.getStreamName(config.type, id) || Aggregate.getStreamName(id) === config.getStreamName\n', () => {
     let Aggregate = AggregateFactory({
       type: 'myaggregate',
       getStreamName: (type, id) => `test-${type}-${id}`,
@@ -344,6 +344,90 @@ describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
       events: []
     })
     should(SingularAggregate.getStreamName('xyz')).equal('myaggregate-uniq-stream')
+  })
+
+  it('throws if `id` is truthy and is not a string', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    should(() => {
+      MyAggregate(1)
+    }).throw(new RegExp('^id MUST be either falsy or a string$'))
+    should(() => {
+      MyAggregate(true)
+    }).throw(new RegExp('^id MUST be either falsy or a string$'))
+    should(() => {
+      MyAggregate([])
+    }).throw(new RegExp('^id MUST be either falsy or a string$'))
+    should(() => {
+      MyAggregate({})
+    }).throw(new RegExp('^id MUST be either falsy or a string$'))
+  })
+  it('throws if `snapshot` is truthy and is not a valid snapshot object like {version: Integer >= 1, state: String}', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    should(() => {
+      MyAggregate(null, true)
+    }).throw(new RegExp('^snapshot MUST be either falsy or an object like {version: Integer >= 1, state: String}$'))
+    should(() => {
+      MyAggregate(null, [])
+    }).throw(new RegExp('^snapshot MUST be either falsy or an object like {version: Integer >= 1, state: String}$'))
+    should(() => {
+      MyAggregate(null, {})
+    }).throw(new RegExp('^snapshot MUST be either falsy or an object like {version: Integer >= 1, state: String}$'))
+    should(() => {
+      MyAggregate(null, {version: -2, state: ''})
+    }).throw(new RegExp('^snapshot MUST be either falsy or an object like {version: Integer >= 1, state: String}$'))
+    should(() => {
+      MyAggregate(null, {version: 14, state: 4})
+    }).throw(new RegExp('^snapshot MUST be either falsy or an object like {version: Integer >= 1, state: String}$'))
+    should(() => {
+      MyAggregate(null, {version: 14, state: ''})
+    }).throw(new RegExp('could not deserialize state$'))
+
+    should(() => {
+      MyAggregate(null, {version: 14, state: '{}'})
+    }).not.throw()
+  })
+  it('throws if `events` is not falsy and is not an array of 0 or more valid events like {type: String, data: String}', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    should(() => {
+      MyAggregate(null, null, true)
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, {})
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, [true])
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, [{}])
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, [{type: 'SomethingHappened'}])
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, [{type: 'SomethingHappened', data: true}])
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    should(() => {
+      MyAggregate(null, null, [{type: 'SomethingHappened', data: []}])
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
+
+    should(() => {
+      MyAggregate(null, null, [{type: 'SomethingHappened', data: ''}])
+    }).not.throw()
   })
 })
 
@@ -694,7 +778,7 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
     let aggregate = Aggregate('xyz')
     should(() => {
       aggregate.appendEvents([{type: 'x', data: false}])
-    }).throw(new RegExp('^aggregateEvents MUST be either falsy or an array of objects like {type: String, data: String}$'))
+    }).throw(new RegExp('^events MUST be either falsy or an array of objects like {type: String, data: String}$'))
   })
   it('aggregate.appendEvents(events) returns a different aggregate instance width version = aggregate.version + events.length', () => {
     let Aggregate = AggregateFactory({
