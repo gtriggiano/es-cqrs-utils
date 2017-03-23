@@ -743,7 +743,7 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
   })
 })
 
-describe.only('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and side effects', () => {
+describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and side effects', () => {
   it('throws \'EventDataNotValidError\' if data is not valid according to the schema passed to the AggregateEvent factory', () => {
     let MyAggregate = AggregateFactory({
       type: 'MyAggregate',

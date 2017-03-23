@@ -5,7 +5,7 @@ const libFolder = `../${process.env.LIB_FOLDER}`
 const AggregateMethod = require(`${libFolder}/AggregateMethod`).default
 const MethodInputNotValidError = require(`${libFolder}/AggregateMethod`).MethodInputNotValidError
 
-describe('AggregateMethod.MethodInputNotValidError', () => {
+describe('MethodInputNotValidError', () => {
   it('is a function', () => should(MethodInputNotValidError).be.a.Function())
   it('is an Error constructor', () => {
     let e = new MethodInputNotValidError()
@@ -90,123 +90,123 @@ describe('AggregateMethod(config)', () => {
       name: 'mymethod'
     })).throw()
   })
+})
 
-  describe('method = AggregateMethod(config)', () => {
-    it('is an object', () => should(AggregateMethod({
+describe('method = AggregateMethod(config)', () => {
+  it('is an object', () => should(AggregateMethod({
+    name: 'mymethod',
+    handler: () => {}
+  })).be.an.Object())
+  it('is an instance of AggregateMethod', () => {
+    let method = AggregateMethod({
       name: 'mymethod',
       handler: () => {}
-    })).be.an.Object())
-    it('is an instance of AggregateMethod', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {}
-      })
-      should(method).be.an.instanceOf(AggregateMethod)
     })
-    it('method.name === config.name', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {}
-      })
-      should(method.name).equal(`mymethod`)
+    should(method).be.an.instanceOf(AggregateMethod)
+  })
+  it('method.name === config.name', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {}
     })
-    it('method.handler === config.handler', () => {
-      let handler = () => {}
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler
-      })
-      should(method.handler === handler).be.True()
+    should(method.name).equal(`mymethod`)
+  })
+  it('method.handler === config.handler', () => {
+    let handler = () => {}
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler
     })
-    it('method.description is a string, defaulting to `No description provided`', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {}
-      })
-      should(method.description).equal(`No description provided`)
+    should(method.handler === handler).be.True()
+  })
+  it('method.description is a string, defaulting to `No description provided`', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {}
     })
-    it('method.description === config.description, if provided', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        description: 'My method description',
-        handler: () => {}
-      })
-      should(method.description).equal(`My method description`)
+    should(method.description).equal(`No description provided`)
+  })
+  it('method.description === config.description, if provided', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      description: 'My method description',
+      handler: () => {}
     })
-    it('method.parseInput() is a function', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        description: 'My method description',
-        handler: () => {}
-      })
-      should(method.parseInput).be.a.Function()
+    should(method.description).equal(`My method description`)
+  })
+  it('method.parseInput() is a function', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      description: 'My method description',
+      handler: () => {}
     })
-    it('method.parseInput(input) throws if input is not valid according to config.inputSchema', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {},
-        inputSchema: {
-          properties: {
-            first: {type: 'string'}
-          },
-          required: ['first']
-        }
-      })
+    should(method.parseInput).be.a.Function()
+  })
+  it('method.parseInput(input) throws if input is not valid according to config.inputSchema', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {},
+      inputSchema: {
+        properties: {
+          first: {type: 'string'}
+        },
+        required: ['first']
+      }
+    })
 
-      should(() => method.parseInput({})).throw()
-      should(() => method.parseInput({first: 1})).throw()
-      should(() => method.parseInput({first: 'one'})).not.throw()
+    should(() => method.parseInput({})).throw()
+    should(() => method.parseInput({first: 1})).throw()
+    should(() => method.parseInput({first: 'one'})).not.throw()
+  })
+  it('method.parseInput(input) returns an immutable deep clone of input', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {}
     })
-    it('method.parseInput(input) returns an immutable deep clone of input', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {}
-      })
 
-      let input = {first: 'one', map: {first: 1, list: [1, 2, 3]}}
-      let parsedInput = method.parseInput(input)
+    let input = {first: 'one', map: {first: 1, list: [1, 2, 3]}}
+    let parsedInput = method.parseInput(input)
 
-      should(parsedInput).not.equal(input)
-      should(parsedInput).eql(input)
-      should(() => {
-        parsedInput.first = 1
-      }).throw(/Cannot assign to read only property 'first'/)
-      should(() => {
-        parsedInput.map.first = 'one'
-      }).throw(/Cannot assign to read only property 'first'/)
-      should(() => {
-        parsedInput.map.list[0] = 'one'
-      }).throw(/Cannot assign to read only property '0'/)
-    })
-    it('json schema flag `additionalProperties: false` strips out unknown props from the immutable input returned by method.parseInput(input)', () => {
-      let method = AggregateMethod({
-        name: 'mymethod',
-        handler: () => {},
-        inputSchema: {
-          additionalProperties: false,
-          properties: {
-            first: {type: 'string'},
-            second: {
-              properties: {
-                first: {type: 'string'}
-              }
+    should(parsedInput).not.equal(input)
+    should(parsedInput).eql(input)
+    should(() => {
+      parsedInput.first = 1
+    }).throw(/Cannot assign to read only property 'first'/)
+    should(() => {
+      parsedInput.map.first = 'one'
+    }).throw(/Cannot assign to read only property 'first'/)
+    should(() => {
+      parsedInput.map.list[0] = 'one'
+    }).throw(/Cannot assign to read only property '0'/)
+  })
+  it('json schema flag `additionalProperties: false` strips out unknown props from the immutable input returned by method.parseInput(input)', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {},
+      inputSchema: {
+        additionalProperties: false,
+        properties: {
+          first: {type: 'string'},
+          second: {
+            properties: {
+              first: {type: 'string'}
             }
           }
         }
-      })
-
-      let input = {
-        first: 'one',
-        second: {
-          first: 'one',
-          second: 'two'
-        },
-        third: 'three'
       }
-      let parsedInput = method.parseInput(input)
-
-      should(parsedInput.third).be.undefined()
-      should(parsedInput.second.second).equal('two')
     })
+
+    let input = {
+      first: 'one',
+      second: {
+        first: 'one',
+        second: 'two'
+      },
+      third: 'three'
+    }
+    let parsedInput = method.parseInput(input)
+
+    should(parsedInput.third).be.undefined()
+    should(parsedInput.second.second).equal('two')
   })
 })
