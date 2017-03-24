@@ -19,6 +19,7 @@ export function DefineError (name) {
 
 export const schemaValidator = Ajv({allErrors: true, removeAdditional: true})
 
+// Credit to https://github.com/mathiasbynens/mothereff.in/blob/master/js-variables/eff.js
 export function isValidIdentifier (identifier, strict) {
   if (!isString(identifier)) return false
 
