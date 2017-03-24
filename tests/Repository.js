@@ -3,9 +3,12 @@ import sinon from 'sinon'
 
 const libFolder = `../${process.env.LIB_FOLDER}`
 
+const AggregateEvent = require(`${libFolder}/AggregateEvent`).default
+const AggregateMethod = require(`${libFolder}/AggregateMethod`).default
 const AggregateFactory = require(`${libFolder}/AggregateFactory`).default
 const Repository = require(`${libFolder}/Repository`).default
 const AggregateLoadingError = require(`${libFolder}/Repository`).AggregateLoadingError
+const AggregateSavingError = require(`${libFolder}/Repository`).AggregateSavingError
 
 function getMockEventstoreService (working) {
   let streams = {
@@ -322,10 +325,159 @@ describe('repository.load(aggregates)', () => {
 })
 
 describe('repository.save(aggregates)', () => {
-  it('throws if aggregates is not an array of 0 or more aggregates instances')
-  it('throws if aggregates are not unique by stream')
-  it('calls eventstoreService.saveEventsToMultipleStreams() with an array of objects representing stream writing requests')
-  it('returns a promise of a list of loaded aggregates')
-  it('the returned promise is rejected with `AggregateSavingError` if the operation fails')
-  it('the AggregateSavingError instance has a .originalError property that references the error provided by the eventstoreService')
+  it('throws if aggregates is not an array of 0 or more aggregates instances', () => {
+    let repository = Repository({eventstoreService: getMockEventstoreService(true)})
+    should(() => {
+      repository.save()
+    }).throw(new RegExp('^aggregates MUST be an array of 0 or more aggregate instances unique by stream$'))
+    should(() => {
+      repository.save([1])
+    }).throw(new RegExp('^aggregates MUST be an array of 0 or more aggregate instances unique by stream$'))
+
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let aggregate = MyAggregate('xyz')
+    should(() => {
+      repository.save([aggregate])
+    }).not.throw()
+  })
+  it('throws if aggregates are not unique by stream', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let aggregate = MyAggregate('xyz')
+    let aggregateSameStream = MyAggregate('xyz')
+
+    let repository = Repository({eventstoreService: getMockEventstoreService(true)})
+    should(() => {
+      repository.save([aggregate, aggregateSameStream])
+    }).throw(new RegExp('^aggregates MUST be an array of 0 or more aggregate instances unique by stream$'))
+  })
+  it('calls eventstoreService.saveEventsToMultipleStreams() with an array of objects representing stream writing requests', (done) => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [
+        AggregateMethod({
+          name: 'DoThis',
+          handler: (aggregate) => aggregate.emit.DidThis()
+        })
+      ],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'DidThis',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.DoThis()
+
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(true),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    sinon.spy(ifaces.eventstoreService, 'saveEventsToMultipleStreams')
+    repository.save([aggregate]).then(() => {
+      should(ifaces.eventstoreService.saveEventsToMultipleStreams.calledOnce).be.True()
+      done()
+    })
+    .catch(done)
+  })
+  it('returns a promise of a list of loaded aggregates', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let aggregate = MyAggregate('xyz')
+
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(true),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    should(repository.save([aggregate])).be.a.Promise()
+  })
+  it('the returned promise is rejected with `AggregateSavingError` if the operation fails', (done) => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [
+        AggregateMethod({
+          name: 'DoThis',
+          handler: (aggregate) => aggregate.emit.DidThis()
+        })
+      ],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'DidThis',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.DoThis()
+
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(false),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    repository.save([aggregate])
+      .then(() => done('Should reject with AggregateSavingError'))
+      .catch((e) => {
+        should(e).be.an.instanceOf(Error)
+        should(e).be.an.instanceOf(AggregateSavingError)
+        done()
+      })
+      .catch(done)
+  })
+  it('the AggregateSavingError instance has a .originalError property that references the error provided by the eventstoreService', (done) => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      methods: [
+        AggregateMethod({
+          name: 'DoThis',
+          handler: (aggregate) => aggregate.emit.DidThis()
+        })
+      ],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'DidThis',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.DoThis()
+
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(false),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    repository.save([aggregate])
+      .then(() => done('Should reject with AggregateSavingError'))
+      .catch((e) => {
+        should(e.originalError).be.an.instanceOf(Error)
+        should(e.originalError.message).equal('eventstoreservice not working')
+        done()
+      })
+      .catch(done)
+  })
 })

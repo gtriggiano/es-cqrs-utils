@@ -7,7 +7,9 @@ export function DefineError (name) {
     Error.captureStackTrace(this, this.constructor)
     this.name = name
     this.message = message
-    this.extra = extra
+    if (extra !== undefined) {
+      this.extra = extra
+    }
   }
 
   util.inherits(CustomError, Error)

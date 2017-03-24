@@ -7,6 +7,7 @@ import { DefineError } from './utils'
 import AggregateFactory, { AGGREGATE_SHOULD_EXIST, ENSURE_VERSION_CONSISTENCY } from './AggregateFactory'
 
 export const AggregateLoadingError = DefineError('AggregateLoadingError')
+export const AggregateSavingError = DefineError('AggregateLoadingError')
 
 export default function Repository ({
   eventstoreService,
@@ -57,7 +58,7 @@ export default function Repository ({
         })
       )
     }},
-    save: {value: (aggregates) => new Promise((resolve) => {
+    save: {value: (aggregates) => {
       if (
         !Array.isArray(aggregates) ||
         !every(aggregates, (aggregate) => aggregate instanceof AggregateFactory) ||
@@ -66,22 +67,25 @@ export default function Repository ({
 
       let aggregatesToSave = aggregates.filter(({isDirty}) => isDirty)
 
-      resolve(
-        eventstoreService.saveEventsToMultipleStreams(aggregatesToSave.map(
-          aggregate => ({
-            stream: aggregate.stream,
-            events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
-            expectedVersion:
-              aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
-                ? aggregate.version
-                : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
-                  ? -1
-                  : -2
-          })
-        ))
-        .then(() => repository.load(aggregates))
-      )
-    })}
+      return eventstoreService.saveEventsToMultipleStreams(aggregatesToSave.map(
+        aggregate => ({
+          stream: aggregate.stream,
+          events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
+          expectedVersion:
+            aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
+              ? aggregate.version
+              : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
+                ? -1
+                : -2
+        })
+      ))
+      .then(() => repository.load(aggregates))
+      .catch((eventStoreError) => {
+        let e = new AggregateSavingError()
+        e.originalError = eventStoreError
+        throw e
+      })
+    }}
   })
 }
 
