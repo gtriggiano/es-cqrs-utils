@@ -76,6 +76,22 @@ function getMockSnapshotService (working) {
   }
 }
 
+describe('AggregateLoadingError', () => {
+  it('is a function', () => should(AggregateLoadingError).be.a.Function())
+  it('is an Error constructor', () => {
+    let e = new AggregateLoadingError()
+    should(e).be.an.instanceOf(Error)
+  })
+})
+
+describe('AggregateSavingError', () => {
+  it('is a function', () => should(AggregateSavingError).be.a.Function())
+  it('is an Error constructor', () => {
+    let e = new AggregateSavingError()
+    should(e).be.an.instanceOf(Error)
+  })
+})
+
 describe('Repository({eventstoreService, snapshotService})', () => {
   it('throws if eventstoreService has not a valid interface {getEventsOfStream(), saveEventsToMultipleStreams()}', () => {
     should(() => {
