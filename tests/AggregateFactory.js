@@ -280,14 +280,14 @@ describe('Aggregate(id, snapshot, events) = AggregateFactory(config)', () => {
     events: []
   })).be.an.instanceOf(AggregateFactory))
 
-  it('Aggregate.name === config.type', () => {
+  it('Aggregate.name === (config.type + \'Aggregate\')', () => {
     let Aggregate = AggregateFactory({
-      type: 'myaggregate',
+      type: 'User',
       methods: [],
       errors: [],
       events: []
     })
-    should(Aggregate.name).equal('myaggregate')
+    should(Aggregate.name).equal('UserAggregate')
   })
   it('Aggregate.type === config.type', () => {
     let Aggregate = AggregateFactory({

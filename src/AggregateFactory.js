@@ -161,7 +161,7 @@ export default function AggregateFactory ({
   Object.setPrototypeOf(Aggregate, AggregateFactory.prototype)
   Object.setPrototypeOf(Aggregate.prototype, AggregateFactory.prototype)
   return Object.defineProperties(Aggregate, {
-    name: {value: type},
+    name: {value: `${type}Aggregate`},
     type: {value: type},
     description: {value: description || 'No description provided'},
     toString: {value: () => type},
