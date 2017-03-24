@@ -277,6 +277,14 @@ describe('event = Event(data)', () => {
     let e = Event({prop: 'test'})
     should(e.type).equal(Event.type)
   })
+  it('if not passed, data defaults to an empty string', () => {
+    let Event = AggregateEvent({
+      type: 'Created',
+      reducer: () => {}
+    })
+    let evt = Event()
+    should(evt.data).equal('')
+  })
   it('by default event.data has the same shape of data if no config.schema is passed to AggregateEvent(config)', () => {
     let Event = AggregateEvent({
       type: 'Created',

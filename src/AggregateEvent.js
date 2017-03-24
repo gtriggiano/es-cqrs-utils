@@ -1,5 +1,4 @@
 import isString from 'lodash/isString'
-import isEmpty from 'lodash/isEmpty'
 import isFunction from 'lodash/isFunction'
 import Immutable from 'seamless-immutable'
 
@@ -20,7 +19,7 @@ export default function AggregateEvent ({
   let _serializeData = serializeData || JSON.stringify
   let _deserializeData = deserializeData || JSON.parse
 
-  function Event (data) {
+  function Event (data = '') {
     let validate = schema ? schemaValidator.compile(schema) : () => true
     let isValidData = validate(data)
 
