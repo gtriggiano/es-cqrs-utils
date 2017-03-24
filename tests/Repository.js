@@ -5,39 +5,71 @@ const libFolder = `../${process.env.LIB_FOLDER}`
 
 const AggregateFactory = require(`${libFolder}/AggregateFactory`).default
 const Repository = require(`${libFolder}/Repository`).default
+const AggregateLoadingError = require(`${libFolder}/Repository`).AggregateLoadingError
 
 function getMockEventstoreService (working) {
+  let streams = {
+    'SnapshottingAggregate::xyz': [
+      {type: 'SomethingHappened', data: '{"when": 1490306633949}'},
+      {type: 'SomethingHappened', data: '{"when": 1490306670621}'},
+      {type: 'SomethingHappened', data: '{"when": 1490306680621}'},
+      {type: 'SomethingHappened', data: '{"when": 1490306780621}'}
+    ]
+  }
+
+  function getEventsFromStream (stream) {
+    return streams[stream] || null
+  }
+  function addEventsToStream (stream, events) {
+    let existingEvents = getEventsFromStream(stream)
+    if (existingEvents) {
+      existingEvents.push(events)
+    } else {
+      streams[stream] = events
+    }
+  }
+
   return {
-    getEventsOfStream: sinon.stub().returns(
-      working
-       ? Promise.resolve([
-         {type: 'SomethingHappened', data: '{"when": 1490306633949}'},
-         {type: 'SomethingChanged', data: '{"when": 1490306670621}'}
-       ])
-       : Promise.reject(new Error('eventstore error'))
-     ),
-    saveEventsToMultipleStreams: sinon.stub().returns(
-      working
-        ? Promise.resolve()
-        : Promise.reject(new Error('eventstore error'))
-    )
+    getEventsOfStream: ({stream, fromVersion}) => Promise.resolve().then(() => {
+      if (!working) throw new Error('eventstoreservice not working')
+      let events = getEventsFromStream(stream)
+      return events ? events.slice(fromVersion) : []
+    }),
+    saveEventsToMultipleStreams: (writeOperations) => Promise.resolve().then(() => {
+      if (!working) throw new Error('eventstoreservice not working')
+      writeOperations.forEach(({stream, events, expectedVersion}) => {
+        let existingEvents = getEventsFromStream(stream)
+        let actualStreamVersion = (existingEvents && existingEvents.length) || 0
+        switch (expectedVersion) {
+          case -2: break
+          case -1:
+            if (!actualStreamVersion) throw new Error(`stream ${stream} does not exists`)
+            break
+          default:
+            if (expectedVersion !== actualStreamVersion) throw new Error(`stream ${stream} version mismatch`)
+        }
+      })
+      writeOperations.forEach(({stream, events}) => addEventsToStream(stream, events))
+    })
   }
 }
 function getMockSnapshotService (working) {
+  let snapshots = {
+    'SnapshottingAggregate::xyz': {
+      version: 2,
+      state: '{"thingsHappened": 2, "lastThingAppenedOn": 1490306670621}'
+    }
+  }
+
   return {
-    loadSnapshot: sinon.stub().returns(
-      working
-       ? Promise.resolve({
-         version: 4,
-         state: '{"computedProp": 42}'
-       })
-       : Promise.reject(new Error('snapshot service error'))
-     ),
-    makeSnapshot: sinon.stub().returns(
-      working
-        ? Promise.resolve()
-        : Promise.reject(new Error('snapshot service error'))
-    )
+    loadSnapshot: (snapshotKey) => Promise.resolve().then(() => {
+      if (!working) throw new Error('snapshotservice not working')
+      return snapshots[snapshotKey]
+    }),
+    saveSnapshot: (snapshotKey, snapshot) => Promise.resolve().then(() => {
+      if (!working) throw new Error('snapshotservice not working')
+      snapshots[snapshotKey] = snapshot
+    })
   }
 }
 
@@ -57,7 +89,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
       Repository({eventstoreService: {getEventsOfStream () {}, saveEventsToMultipleStreams () {}}})
     }).not.throw()
   })
-  it('throws if snapshotService is truthy and has not a valid interface {loadSnapshot(), makeSnapshot()}', () => {
+  it('throws if snapshotService is truthy and has not a valid interface {loadSnapshot(), saveSnapshot()}', () => {
     should(() => {
       Repository({
         eventstoreService: {
@@ -77,7 +109,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
           loadSnapshot () {}
         }
       })
-    }).throw(new RegExp('^snapshotService.makeSnapshot.* MUST be a function$'))
+    }).throw(new RegExp('^snapshotService.saveSnapshot.* MUST be a function$'))
     should(() => {
       Repository({
         eventstoreService: {
@@ -85,7 +117,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
           saveEventsToMultipleStreams () {}
         },
         snapshotService: {
-          makeSnapshot () {}
+          saveSnapshot () {}
         }
       })
     }).throw(new RegExp('^snapshotService.loadSnapshot.* MUST be a function$'))
@@ -98,7 +130,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
         },
         snapshotService: {
           loadSnapshot () {},
-          makeSnapshot () {}
+          saveSnapshot () {}
         }
       })
     }).not.throw()
@@ -155,6 +187,9 @@ describe('repository.load(aggregates)', () => {
     })
     let aggregate = MyAggregate('xyz')
     let aggregate2 = MyAggregate('abc')
+
+    sinon.spy(ifaces.snapshotService, 'loadSnapshot')
+
     repository.load([aggregate, aggregate2]).then(() => {
       should(ifaces.snapshotService.loadSnapshot.calledTwice).be.True()
       should(ifaces.snapshotService.loadSnapshot.calledWith(aggregate.snapshotKey)).be.True()
@@ -177,6 +212,9 @@ describe('repository.load(aggregates)', () => {
     })
     let aggregate = MyAggregate('xyz')
     let aggregate2 = MyAggregate('abc')
+
+    sinon.spy(ifaces.eventstoreService, 'getEventsOfStream')
+
     repository.load([aggregate, aggregate2]).then(() => {
       should(ifaces.eventstoreService.getEventsOfStream.calledTwice).be.True()
       should(ifaces.eventstoreService.getEventsOfStream.calledWith({
@@ -191,10 +229,96 @@ describe('repository.load(aggregates)', () => {
     })
     .catch(done)
   })
-  it('if a snapshotService is available, attempts to save a snapshot of each aggregate needing it after being loaded')
-  it('returns a promise of a list of loaded aggregates')
-  it('the returned promise is rejected with `AggregateLoadingError` if the loading of an aggregate fails')
-  it('the AggregateLoadingError instance has a .originalError property that references the error provided by the eventstoreService')
+  it('if a snapshotService is available, attempts to save a snapshot of each aggregate needing it after being loaded', (done) => {
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(true),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+    let SnapshottingAggregate = AggregateFactory({
+      type: 'SnapshottingAggregate',
+      methods: [],
+      errors: [],
+      events: [],
+      snapshotThreshold: 2
+    })
+    let AnotherAggregate = AggregateFactory({
+      type: 'AnotherAggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let snapshotting = SnapshottingAggregate('xyz')
+    let another = AnotherAggregate('xyz')
+
+    sinon.spy(ifaces.snapshotService, 'saveSnapshot')
+
+    repository.load([snapshotting, another]).then(([snapshottingLoaded, anotherLoaded]) => {
+      should(ifaces.snapshotService.saveSnapshot.calledOnce).be.True()
+      // console.log(ifaces.snapshotService.saveSnapshot.firstCall)
+      should(ifaces.snapshotService.saveSnapshot.calledWithMatch(snapshotting.snapshotKey, {
+        version: snapshottingLoaded.version,
+        state: snapshottingLoaded.serializedState
+      })).be.True()
+      done()
+    })
+    .catch(done)
+  })
+  it('returns a promise of a list of loaded aggregates', () => {
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(true),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+    should(repository.load([])).be.a.Promise()
+  })
+  it('the returned promise is rejected with `AggregateLoadingError` if the loading of an aggregate fails', (done) => {
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(false),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    let Aggregate = AggregateFactory({
+      type: 'Aggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let aggregate = Aggregate('xyz')
+
+    repository.load([aggregate])
+    .then(() => done(new Error('should fail')))
+    .catch((e) => {
+      should(e).be.an.instanceOf(Error)
+      should(e).be.an.instanceOf(AggregateLoadingError)
+      done()
+    })
+  })
+  it('the AggregateLoadingError instance has a .originalError property that references the error provided by the eventstoreService', (done) => {
+    let ifaces = {
+      eventstoreService: getMockEventstoreService(false),
+      snapshotService: getMockSnapshotService(true)
+    }
+    let repository = Repository(ifaces)
+
+    let Aggregate = AggregateFactory({
+      type: 'Aggregate',
+      methods: [],
+      errors: [],
+      events: []
+    })
+    let aggregate = Aggregate('xyz')
+
+    repository.load([aggregate])
+    .then(() => done(new Error('should fail')))
+    .catch((e) => {
+      should(e.originalError).be.an.instanceOf(Error)
+      should(e.originalError.message).equal('eventstoreservice not working')
+      done()
+    })
+    .catch(done)
+  })
 })
 
 describe('repository.save(aggregates)', () => {

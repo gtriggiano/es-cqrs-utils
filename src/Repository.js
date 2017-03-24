@@ -4,7 +4,7 @@ import isObject from 'lodash/isObject'
 import isFunction from 'lodash/isFunction'
 
 import { DefineError } from './utils'
-import AggregateFactory from './AggregateFactory'
+import AggregateFactory, { AGGREGATE_SHOULD_EXIST, ENSURE_VERSION_CONSISTENCY } from './AggregateFactory'
 
 export const AggregateLoadingError = DefineError('AggregateLoadingError')
 
@@ -41,9 +41,9 @@ export default function Repository ({
             let loadedAggregate = aggregate.Factory(aggregate.id, snapshot, events)
 
             if (snapshotService && loadedAggregate.needsSnapshot) {
-              snapshotService.makeSnapshot(aggregate.snapshotKey, {
-                version: aggregate.version,
-                state: aggregate.serializedState
+              snapshotService.saveSnapshot(loadedAggregate.snapshotKey, {
+                version: loadedAggregate.version,
+                state: loadedAggregate.serializedState
               }).catch((e) => {})
             }
 
@@ -70,8 +70,13 @@ export default function Repository ({
         eventstoreService.saveEventsToMultipleStreams(aggregatesToSave.map(
           aggregate => ({
             stream: aggregate.stream,
-            events: aggregate.newEvents,
-            consistencyPolicy: aggregate.persistenceConsistencyPolicy
+            events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
+            expectedVersion:
+              aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
+                ? aggregate.version
+                : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
+                  ? -1
+                  : -2
           })
         ))
         .then(() => repository.load(aggregates))
@@ -96,8 +101,8 @@ export const _validateEventstoreServiceInterface = (eventstoreService) => {
 
 export const _validateSnapshotServiceInterface = (snapshotService) => {
   if (snapshotService) {
-    if (!isObject(snapshotService)) throw new TypeError('snapshotService MUST be an object like {loadSnapshot(), makeSnapshot()}')
+    if (!isObject(snapshotService)) throw new TypeError('snapshotService MUST be an object like {loadSnapshot(), saveSnapshot()}')
     if (!isFunction(snapshotService.loadSnapshot)) throw new TypeError('snapshotService.loadSnapshot(snapshotKey) MUST be a function')
-    if (!isFunction(snapshotService.makeSnapshot)) throw new TypeError('snapshotService.makeSnapshot(snapshotKey, {version, state}) MUST be a function')
+    if (!isFunction(snapshotService.saveSnapshot)) throw new TypeError('snapshotService.saveSnapshot(snapshotKey, {version, state}) MUST be a function')
   }
 }
