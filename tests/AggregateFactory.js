@@ -522,7 +522,7 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
       aggregate[prop] = 'x'
     }).throw(new RegExp(`^Cannot set property ${prop}`)))
   })
-  it(`aggregate exposes as props the set of methods passed to AggregateFactory
+  it(`aggregate exposes as props a set of functions named after the set of methods passed to AggregateFactory
 
       Example:
         let MyAggregate = AggregateFactory({
@@ -683,7 +683,7 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
     let aggregate = Aggregate('xyz')
     should(aggregate.Factory).equal(Aggregate)
   })
-  it(`aggregate.emit exposes as props the set of events creators passed to AggregateFactory
+  it(`aggregate.emit exposes as props a set of functions named after the set of events creators passed to AggregateFactory
 
       Example:
         let MyAggregate = AggregateFactory({
@@ -893,7 +893,7 @@ describe('aggregate = Aggregate(aggregateId, aggregateSnapshot, aggregateEvents)
   })
 })
 
-describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and side effects', () => {
+describe('aggregate.emit.SomethingHappened(data, consistencyPolicy) behaviour', () => {
   it('throws \'EventDataNotValidError\' if data is not valid according to the schema passed to the AggregateEvent factory', () => {
     let MyAggregate = AggregateFactory({
       type: 'MyAggregate',
@@ -917,7 +917,7 @@ describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and si
       aggregate.emit.SomethingHappened({})
     }).throw(EventDataNotValidError)
   })
-  it('evt is an instance of AggregateEvent', () => {
+  it('returns an instance of AggregateEvent', () => {
     let MyAggregate = AggregateFactory({
       type: 'MyAggregate',
       methods: [],
@@ -932,7 +932,7 @@ describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and si
     let aggregate = MyAggregate('xyz')
     should(aggregate.emit.SomethingHappened()).be.an.instanceOf(AggregateEvent)
   })
-  it('evt is an instance of SomethingHappened', () => {
+  it('returns an instance of SomethingHappened\n', () => {
     let SomethingHappenedEvent = AggregateEvent({
       type: 'SomethingHappened',
       reducer: () => {}
@@ -948,37 +948,21 @@ describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and si
     let aggregate = MyAggregate('xyz')
     should(aggregate.emit.SomethingHappened()).be.an.instanceOf(SomethingHappenedEvent)
   })
-  it('evt is immutable', () => {
-    let MyAggregate = AggregateFactory({
-      type: 'MyAggregate',
-      methods: [],
-      errors: [],
-      events: [
-        AggregateEvent({
-          type: 'SomethingHappened',
-          reducer: () => {}
-        })
-      ]
-    })
-    let aggregate = MyAggregate('xyz')
-    let evt = aggregate.emit.SomethingHappened({a: 1})
-    should(() => {
-      evt.type = 'mutated'
-    }).throw(new RegExp('^Cannot assign to read only property \'type\''))
-    should(() => {
-      evt.data = 'mutated'
-    }).throw(new RegExp('^Cannot assign to read only property \'data\''))
-    should(() => {
-      evt.a = 'new prop'
-    }).throw(new RegExp('^Can\'t add property a, object is not extensible$'))
-  })
-  it(`evt.type === 'SomethingHappened'`, () => {
+  it('the returned event is added to aggregate.newEvents collection', () => {
+    let now = Date.now()
     let SomethingHappenedEvent = AggregateEvent({
       type: 'SomethingHappened',
-      reducer: () => {}
+      reducer: (state, data) => ({
+        thingsHappened: state.thingsHappened + 1,
+        lastThingDateMsFromEpoch: data.when
+      })
     })
     let MyAggregate = AggregateFactory({
       type: 'MyAggregate',
+      initialState: {
+        thingsHappened: 0,
+        lastThingDateMsFromEpoch: null
+      },
       methods: [],
       errors: [],
       events: [
@@ -986,36 +970,16 @@ describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and si
       ]
     })
     let aggregate = MyAggregate('xyz')
-    let evt = aggregate.emit.SomethingHappened()
-    should(evt.type).equal('SomethingHappened')
-  })
-  it('evt.data is immutable', () => {
-    let SomethingHappenedEvent = AggregateEvent({
+    aggregate.emit.SomethingHappened({when: now})
+    should(aggregate.newEvents.length).equal(1)
+    should(aggregate.newEvents[0]).containEql({
       type: 'SomethingHappened',
-      reducer: () => {}
+      data: {
+        when: now
+      }
     })
-    let MyAggregate = AggregateFactory({
-      type: 'MyAggregate',
-      methods: [],
-      errors: [],
-      events: [
-        SomethingHappenedEvent
-      ]
-    })
-    let aggregate = MyAggregate('xyz')
-    let evt = aggregate.emit.SomethingHappened({a: 1})
-    should(evt.data).eql({a: 1})
-    should(() => {
-      evt.data.a = 1
-    }).throw(new RegExp('Cannot assign to read only property \'a\''))
-    should(() => {
-      evt.data.b = 1
-    }).throw(new RegExp('Can\'t add property b, object is not extensible'))
-    should(() => {
-      evt.data.b = 1
-    }).throw(new RegExp('Can\'t add property b, object is not extensible'))
   })
-  it('aggregate.version does not change', () => {
+  it('aggregate.version is not changed', () => {
     let SomethingHappenedEvent = AggregateEvent({
       type: 'SomethingHappened',
       reducer: () => {}
@@ -1078,37 +1042,6 @@ describe('evt = aggregate.emit.SomethingHappened(data, consistencyPolicy) and si
     aggregate.emit.SomethingHappened({when: now})
     should(aggregate.state.thingsHappened).equal(1)
     should(aggregate.state.lastThingDateMsFromEpoch).equal(now)
-  })
-  it('evt is added to aggregate.newEvents collection', () => {
-    let now = Date.now()
-    let SomethingHappenedEvent = AggregateEvent({
-      type: 'SomethingHappened',
-      reducer: (state, data) => ({
-        thingsHappened: state.thingsHappened + 1,
-        lastThingDateMsFromEpoch: data.when
-      })
-    })
-    let MyAggregate = AggregateFactory({
-      type: 'MyAggregate',
-      initialState: {
-        thingsHappened: 0,
-        lastThingDateMsFromEpoch: null
-      },
-      methods: [],
-      errors: [],
-      events: [
-        SomethingHappenedEvent
-      ]
-    })
-    let aggregate = MyAggregate('xyz')
-    aggregate.emit.SomethingHappened({when: now})
-    should(aggregate.newEvents.length).equal(1)
-    should(aggregate.newEvents[0]).containEql({
-      type: 'SomethingHappened',
-      data: {
-        when: now
-      }
-    })
   })
   it('if consistencyPolicy === ENSURE_VERSION_CONSISTENCY aggregate.persistenceConsistencyPolicy is ensured to be that from here on', () => {
     let MyAggregate = AggregateFactory({
