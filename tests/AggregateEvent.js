@@ -106,7 +106,7 @@ describe('AggregateEvent(config)', function () {
   })
 })
 
-describe.only('Event(data) = AggregateEvent(config)', function () {
+describe('Event(data) = AggregateEvent(config)', function () {
   it('is a function', () => should(AggregateEvent({
     type: 'myevent',
     reducer: () => {}
