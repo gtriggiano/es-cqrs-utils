@@ -15,12 +15,11 @@ export default function AggregateEvent ({
   deserializeData
 }) {
   _validateEventSettings({type, description, reducer, schema, serializeData, deserializeData})
-
   let _serializeData = serializeData || JSON.stringify
   let _deserializeData = deserializeData || JSON.parse
 
   function Event (data = '') {
-    let validate = schema ? schemaValidator.compile(schema) : () => true
+    let validate = Event.schema ? schemaValidator.compile(Event.schema) : () => true
     let isValidData = validate(data)
 
     if (!isValidData) throw new EventDataNotValidError(schemaValidator.errorsText(validate.errors))
@@ -45,6 +44,7 @@ export default function AggregateEvent ({
     type: {value: type},
     description: {value: description || 'No description provided'},
     toString: {value: () => type},
+    schema: {value: schema ? Immutable(schema) : null},
     reducer: {value: reducer},
     fromSerializedData: {value: _eventFromSerializedData}
   })

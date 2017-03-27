@@ -106,7 +106,7 @@ describe('AggregateEvent(config)', function () {
   })
 })
 
-describe('Event(data) = AggregateEvent(config)', function () {
+describe.only('Event(data) = AggregateEvent(config)', function () {
   it('is a function', () => should(AggregateEvent({
     type: 'myevent',
     reducer: () => {}
@@ -173,6 +173,27 @@ describe('Event(data) = AggregateEvent(config)', function () {
       reducer: () => {}
     })
     should(Event.toString()).equal(`Created`)
+  })
+  it('Event.schema is either null or an immutable version of config.schema', () => {
+    let EventNoSchema = AggregateEvent({
+      type: 'Created',
+      reducer: () => {}
+    })
+    let aSchema = {
+      properties: {
+        one: {type: 'string'}
+      }
+    }
+    let EventWithSchema = AggregateEvent({
+      type: 'Created',
+      schema: aSchema,
+      reducer: () => {}
+    })
+    should(EventNoSchema.schema).be.Null()
+    should(EventWithSchema.schema).eql(aSchema)
+    should(() => {
+      EventWithSchema.schema.properties.two = 'added'
+    }).throw(new RegExp('^Can\'t add property two, object is not extensible'))
   })
   it('Event.reducer === config.reducer', () => {
     let reducer = () => {}
@@ -343,7 +364,7 @@ describe('event = Event(data)', () => {
       e.data.map.k = 'mutated'
     }).throw(/^Cannot assign to read only property/)
   })
-  it('event.serializedData is a getter of the serialized event data', () => {
+  it('event.serializedData is a getter of the serialized event data, defaulting to JSON.stringify(data)', () => {
     let Event = AggregateEvent({
       type: 'Created',
       reducer: () => {}
