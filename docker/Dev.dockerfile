@@ -1,4 +1,4 @@
-FROM node:argon-slim
+FROM node:6.3.1-slim
 
 WORKDIR /package
 

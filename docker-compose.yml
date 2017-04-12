@@ -6,7 +6,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dev.dockerfile
-    image: es-utils-development
+    image: es-utils:development
     volumes:
       - "./.babelrc:/package/.babelrc"
       - "./src:/package/src"
