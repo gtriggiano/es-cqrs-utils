@@ -1,0 +1,18 @@
+# Commands folder
+commands/
+
+# Docker folder
+docker/
+
+# Source folder
+src/
+
+# Tests folders
+tests/
+lib-tests/
+
+# Babel
+.babelrc
+
+# Docker
+docker-compose.yml
