@@ -71,7 +71,7 @@ export default function Repository ({
         aggregate => ({
           stream: aggregate.stream,
           events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
-          expectedVersion:
+          expectedVersionNumber:
             aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
               ? aggregate.version
               : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST

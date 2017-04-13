@@ -33,23 +33,23 @@ function getMockEventstoreService (working) {
   }
 
   return {
-    getEventsOfStream: ({stream, fromVersion}) => Promise.resolve().then(() => {
+    getEventsOfStream: ({stream, fromVersionNumber}) => Promise.resolve().then(() => {
       if (!working) throw new Error('eventstoreservice not working')
       let events = getEventsFromStream(stream)
-      return events ? events.slice(fromVersion) : []
+      return events ? events.slice(fromVersionNumber) : []
     }),
     saveEventsToMultipleStreams: (writeOperations) => Promise.resolve().then(() => {
       if (!working) throw new Error('eventstoreservice not working')
-      writeOperations.forEach(({stream, events, expectedVersion}) => {
+      writeOperations.forEach(({stream, events, expectedVersionNumber}) => {
         let existingEvents = getEventsFromStream(stream)
         let actualStreamVersion = (existingEvents && existingEvents.length) || 0
-        switch (expectedVersion) {
+        switch (expectedVersionNumber) {
           case -2: break
           case -1:
             if (!actualStreamVersion) throw new Error(`stream ${stream} does not exists`)
             break
           default:
-            if (expectedVersion !== actualStreamVersion) throw new Error(`stream ${stream} version mismatch`)
+            if (expectedVersionNumber !== actualStreamVersion) throw new Error(`stream ${stream} version mismatch`)
         }
       })
       writeOperations.forEach(({stream, events}) => addEventsToStream(stream, events))
@@ -171,7 +171,7 @@ describe('repository = Repository({eventstoreService, snapshotService})', functi
   })
 })
 
-describe.only('repository.load(aggregates)', () => {
+describe('repository.load(aggregates)', () => {
   it('throws if aggregates is not an array of 0 or more aggregates instances', () => {
     let repository = Repository({eventstoreService: getMockEventstoreService(true)})
     should(() => {
@@ -407,7 +407,10 @@ describe('repository.save(aggregates)', () => {
       should(ifaces.eventstoreService.saveEventsToMultipleStreams.calledOnce).be.True()
       done()
     })
-    .catch(done)
+    .catch((e) => {
+      console.log(e)
+      done(e)
+    })
   })
   it('returns a promise of a list of loaded aggregates', () => {
     let MyAggregate = AggregateFactory({
