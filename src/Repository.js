@@ -35,7 +35,7 @@ export default function Repository ({
             snapshot,
             eventstoreService.getEventsOfStream({
               stream: aggregate.stream,
-              fromVersion: snapshot ? snapshot.version : 0
+              fromVersionNumber: snapshot ? snapshot.version : 0
             })
           ]))
           .then(([snapshot, events]) => {
@@ -67,11 +67,11 @@ export default function Repository ({
 
       let aggregatesToSave = aggregates.filter(({isDirty}) => isDirty)
 
-      return eventstoreService.saveEventsToMultipleStreams(aggregatesToSave.map(
+      return eventstoreService.appendEventsToMultipleStreams(aggregatesToSave.map(
         aggregate => ({
           stream: aggregate.stream,
           events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
-          expectedVersion:
+          expectedVersionNumber:
             aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
               ? aggregate.version
               : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
@@ -98,9 +98,9 @@ export const _validateRepositoryConfig = ({
 }
 
 export const _validateEventstoreServiceInterface = (eventstoreService) => {
-  if (!isObject(eventstoreService)) throw new TypeError('eventstoreService MUST be an object like {getEventsOfStream(), saveEventsToMultipleStreams()}')
+  if (!isObject(eventstoreService)) throw new TypeError('eventstoreService MUST be an object like {getEventsOfStream(), appendEventsToMultipleStreams()}')
   if (!isFunction(eventstoreService.getEventsOfStream)) throw new TypeError('eventstoreService.getEventsOfStream({stream, fromVersion}) MUST be a function')
-  if (!isFunction(eventstoreService.saveEventsToMultipleStreams)) throw new TypeError('eventstoreService.saveEventsToMultipleStreams([{stream, events, consistencyPolicy}, ...]) MUST be a function')
+  if (!isFunction(eventstoreService.appendEventsToMultipleStreams)) throw new TypeError('eventstoreService.appendEventsToMultipleStreams([{stream, events, consistencyPolicy}, ...]) MUST be a function')
 }
 
 export const _validateSnapshotServiceInterface = (snapshotService) => {
