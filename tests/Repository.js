@@ -38,7 +38,7 @@ function getMockEventstoreService (working) {
       let events = getEventsFromStream(stream)
       return events ? events.slice(fromVersionNumber) : []
     }),
-    saveEventsToMultipleStreams: (writeOperations) => Promise.resolve().then(() => {
+    appendEventsToMultipleStreams: (writeOperations) => Promise.resolve().then(() => {
       if (!working) throw new Error('eventstoreservice not working')
       writeOperations.forEach(({stream, events, expectedVersionNumber}) => {
         let existingEvents = getEventsFromStream(stream)
@@ -93,19 +93,19 @@ describe('AggregateSavingError', () => {
 })
 
 describe('Repository({eventstoreService, snapshotService})', () => {
-  it('throws if eventstoreService has not a valid interface {getEventsOfStream(), saveEventsToMultipleStreams()}', () => {
+  it('throws if eventstoreService has not a valid interface {getEventsOfStream(), appendEventsToMultipleStreams()}', () => {
     should(() => {
       Repository({})
     }).throw(new RegExp('^eventstoreService MUST be an object like .*$'))
     should(() => {
       Repository({eventstoreService: {getEventsOfStream () {}}})
-    }).throw(new RegExp('^eventstoreService.saveEventsToMultipleStreams.* MUST be a function$'))
+    }).throw(new RegExp('^eventstoreService.appendEventsToMultipleStreams.* MUST be a function$'))
     should(() => {
-      Repository({eventstoreService: {saveEventsToMultipleStreams () {}}})
+      Repository({eventstoreService: {appendEventsToMultipleStreams () {}}})
     }).throw(new RegExp('^eventstoreService.getEventsOfStream.* MUST be a function$'))
 
     should(() => {
-      Repository({eventstoreService: {getEventsOfStream () {}, saveEventsToMultipleStreams () {}}})
+      Repository({eventstoreService: {getEventsOfStream () {}, appendEventsToMultipleStreams () {}}})
     }).not.throw()
   })
   it('throws if snapshotService is truthy and has not a valid interface {loadSnapshot(), saveSnapshot()}', () => {
@@ -113,7 +113,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
       Repository({
         eventstoreService: {
           getEventsOfStream () {},
-          saveEventsToMultipleStreams () {}
+          appendEventsToMultipleStreams () {}
         },
         snapshotService: true
       })
@@ -122,7 +122,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
       Repository({
         eventstoreService: {
           getEventsOfStream () {},
-          saveEventsToMultipleStreams () {}
+          appendEventsToMultipleStreams () {}
         },
         snapshotService: {
           loadSnapshot () {}
@@ -133,7 +133,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
       Repository({
         eventstoreService: {
           getEventsOfStream () {},
-          saveEventsToMultipleStreams () {}
+          appendEventsToMultipleStreams () {}
         },
         snapshotService: {
           saveSnapshot () {}
@@ -145,7 +145,7 @@ describe('Repository({eventstoreService, snapshotService})', () => {
       Repository({
         eventstoreService: {
           getEventsOfStream () {},
-          saveEventsToMultipleStreams () {}
+          appendEventsToMultipleStreams () {}
         },
         snapshotService: {
           loadSnapshot () {},
@@ -376,7 +376,7 @@ describe('repository.save(aggregates)', () => {
       repository.save([aggregate, aggregateSameStream])
     }).throw(new RegExp('^aggregates MUST be an array of 0 or more aggregate instances unique by stream$'))
   })
-  it('calls eventstoreService.saveEventsToMultipleStreams() with an array of objects representing stream writing requests', (done) => {
+  it('calls eventstoreService.appendEventsToMultipleStreams() with an array of objects representing stream writing requests', (done) => {
     let MyAggregate = AggregateFactory({
       type: 'MyAggregate',
       methods: [
@@ -402,9 +402,9 @@ describe('repository.save(aggregates)', () => {
     }
     let repository = Repository(ifaces)
 
-    sinon.spy(ifaces.eventstoreService, 'saveEventsToMultipleStreams')
+    sinon.spy(ifaces.eventstoreService, 'appendEventsToMultipleStreams')
     repository.save([aggregate]).then(() => {
-      should(ifaces.eventstoreService.saveEventsToMultipleStreams.calledOnce).be.True()
+      should(ifaces.eventstoreService.appendEventsToMultipleStreams.calledOnce).be.True()
       done()
     })
     .catch((e) => {
