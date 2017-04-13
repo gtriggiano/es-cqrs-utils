@@ -171,7 +171,7 @@ describe('repository = Repository({eventstoreService, snapshotService})', functi
   })
 })
 
-describe('repository.load(aggregates)', () => {
+describe.only('repository.load(aggregates)', () => {
   it('throws if aggregates is not an array of 0 or more aggregates instances', () => {
     let repository = Repository({eventstoreService: getMockEventstoreService(true)})
     should(() => {
@@ -217,7 +217,7 @@ describe('repository.load(aggregates)', () => {
     })
     .catch(done)
   })
-  it('calls eventstoreService.getEventsOfStream({stream, fromVersion}) for each aggregate to load', (done) => {
+  it('calls eventstoreService.getEventsOfStream({stream, fromVersionNumber}) for each aggregate to load', (done) => {
     let ifaces = {
       eventstoreService: getMockEventstoreService(true),
       snapshotService: getMockSnapshotService(false)
@@ -238,11 +238,11 @@ describe('repository.load(aggregates)', () => {
       should(ifaces.eventstoreService.getEventsOfStream.calledTwice).be.True()
       should(ifaces.eventstoreService.getEventsOfStream.calledWith({
         stream: aggregate.stream,
-        fromVersion: aggregate.version
+        fromVersionNumber: aggregate.version
       })).be.True()
       should(ifaces.eventstoreService.getEventsOfStream.calledWith({
         stream: aggregate2.stream,
-        fromVersion: aggregate2.version
+        fromVersionNumber: aggregate2.version
       })).be.True()
       done()
     })

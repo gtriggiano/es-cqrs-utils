@@ -35,7 +35,7 @@ export default function Repository ({
             snapshot,
             eventstoreService.getEventsOfStream({
               stream: aggregate.stream,
-              fromVersion: snapshot ? snapshot.version : 0
+              fromVersionNumber: snapshot ? snapshot.version : 0
             })
           ]))
           .then(([snapshot, events]) => {
