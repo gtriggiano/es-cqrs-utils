@@ -1,7 +1,7 @@
 {
-  "name": "es-utils",
+  "name": "es-cqrs-utils",
   "version": "0.0.0",
-  "description": "Factory function to generate event sourced aggregates'constructors",
+  "description": "A set of utilites to build event sourced applications, using CQRS",
   "main": "lib/index.js",
   "engines": {
     "node": ">=6.3.1"
@@ -14,14 +14,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gtriggiano/es-utils.git"
+    "url": "git+https://github.com/gtriggiano/es-cqrs-utils.git"
   },
   "author": "Giacomo Triggiano <giacomotriggiano@gmail.com>",
   "license": "MIT",
+  "keywords": [
+    "event sourcing",
+    "CQRS",
+    "aggregates"
+  ],
   "bugs": {
-    "url": "https://github.com/gtriggiano/es-utils/issues"
+    "url": "https://github.com/gtriggiano/es-cqrs-utils/issues"
   },
-  "homepage": "https://github.com/gtriggiano/es-utils#readme",
+  "homepage": "https://github.com/gtriggiano/es-cqrs-utils#readme",
   "dependencies": {
     "ajv": "^4.11.5",
     "lodash": "^4.17.4",
