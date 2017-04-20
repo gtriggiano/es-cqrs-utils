@@ -2,18 +2,18 @@ import util from 'util'
 import isString from 'lodash/isString'
 import Ajv from 'ajv'
 
-export function DefineError (name) {
+export function DefineError (errorName, defaultMessage) {
   function CustomError (message, extra) {
     Error.captureStackTrace(this, this.constructor)
-    this.name = name
-    this.message = message
+    this.name = errorName
+    this.message = message || defaultMessage
     if (extra !== undefined) {
       this.extra = extra
     }
   }
 
   util.inherits(CustomError, Error)
-  Object.defineProperty(CustomError, 'name', {value: `${name}`})
+  Object.defineProperty(CustomError, 'name', {value: `${errorName}`})
   return CustomError
 }
 
