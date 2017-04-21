@@ -14,7 +14,7 @@ describe('Utils', function () {
         let CustomError = DefineError('myerror')
         should(CustomError.name).equal('myerror')
       })
-      describe.only('e = CustomError(message[, extra])', () => {
+      describe('e = CustomError(message[, extra])', () => {
         it('is an instance of Error', () => {
           let CustomError = DefineError('myerror')
           let e = new CustomError()
