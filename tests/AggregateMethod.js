@@ -5,6 +5,8 @@ const libFolder = `../${process.env.LIB_FOLDER}`
 const AggregateMethod = require(`${libFolder}/AggregateMethod`).default
 const MethodInputNotValidError = require(`${libFolder}/AggregateMethod`).MethodInputNotValidError
 
+const { DefineError } = require(`${libFolder}/utils`)
+
 describe('MethodInputNotValidError', () => {
   it('is a function', () => should(MethodInputNotValidError).be.a.Function())
   it('is an Error constructor', () => {
@@ -85,6 +87,18 @@ describe('AggregateMethod(config)', () => {
       }
     })).not.throw()
   })
+  it('throws if config.inputParser is truthy and is not a function', () => {
+    should(() => AggregateMethod({
+      name: 'mymethod',
+      handler: () => {},
+      inputParser: []
+    })).throw('inputParser MUST be either falsy or a function')
+    should(() => AggregateMethod({
+      name: 'mymethod',
+      handler: () => {},
+      inputParser: () => {}
+    })).not.throw()
+  })
   it('throws if config.handler is not a function', () => {
     should(() => AggregateMethod({
       name: 'mymethod'
@@ -142,7 +156,7 @@ describe('method = AggregateMethod(config)', () => {
     })
     should(method.parseInput).be.a.Function()
   })
-  it('method.parseInput(input) throws if input is not valid according to config.inputSchema', () => {
+  it('method.parseInput(input) throws `MethodInputNotValidError` if input is not valid according to config.inputSchema', () => {
     let method = AggregateMethod({
       name: 'mymethod',
       handler: () => {},
@@ -154,11 +168,28 @@ describe('method = AggregateMethod(config)', () => {
       }
     })
 
-    should(() => method.parseInput({})).throw()
-    should(() => method.parseInput({first: 1})).throw()
+    should(() => method.parseInput({})).throw(MethodInputNotValidError)
+    should(() => method.parseInput({first: 1})).throw(MethodInputNotValidError)
     should(() => method.parseInput({first: 'one'})).not.throw()
   })
-  it('method.parseInput(input) returns an immutable deep clone of input', () => {
+  it('method.parseInput(input) throws `MethodInputNotValidError` if config.inputParser(schemaValidatedInput) throws. `e.originalError` is the error thrown by config.inputParser(). Error message is propagated.', () => {
+    let ParserError = DefineError('ParserError')
+    let method = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {},
+      inputParser: () => { throw new ParserError('an error message') }
+    })
+
+    should(() => method.parseInput()).throw(MethodInputNotValidError)
+    try {
+      method.parseInput()
+      throw new Error()
+    } catch (e) {
+      should(e.originalError).be.an.instanceOf(ParserError)
+      should(e.message).equal(e.originalError.message)
+    }
+  })
+  it('method.parseInput(input) returns an immutable deep clone of schemaValidatedInput if no config.parseInput() is present', () => {
     let method = AggregateMethod({
       name: 'mymethod',
       handler: () => {}
@@ -179,7 +210,42 @@ describe('method = AggregateMethod(config)', () => {
       parsedInput.map.list[0] = 'one'
     }).throw(/Cannot assign to read only property '0'/)
   })
-  it('json schema flag `additionalProperties: false` strips out unknown props from the immutable input returned by method.parseInput(input)', () => {
+  it('method.parseInput(input) returns an immutable deep clone of `parsedInput = config.inputParser(schemaValidatedInput)` if config.inputParser() is provided', () => {
+    let method = AggregateMethod({
+      name: 'mymethod',
+      inputSchema: {
+        additionalProperties: false,
+        properties: {
+          first: {type: 'string'}
+        },
+        required: ['first']
+      },
+      handler: () => {},
+      inputParser: (input) => {
+        should(input.second).be.undefined()
+
+        return {
+          ...input,
+          third: 'three'
+        }
+      }
+    })
+
+    let parsedInput = method.parseInput({
+      first: 'one',
+      second: 'two'
+    })
+
+    should(parsedInput.second).be.undefined()
+    should(parsedInput.third).equal('three')
+    should(() => {
+      parsedInput.first = 1
+    }).throw(/Cannot assign to read only property 'first'/)
+    should(() => {
+      parsedInput.fourth = 'four'
+    }).throw(/Can't add property fourth, object is not extensible/)
+  })
+  it('json schema flag `additionalProperties: false` strips out unknown props from `schemaValidatedInput`', () => {
     let method = AggregateMethod({
       name: 'mymethod',
       handler: () => {},
