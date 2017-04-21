@@ -1,6 +1,8 @@
-import isString from 'lodash/isString'
-import isFunction from 'lodash/isFunction'
 import Immutable from 'seamless-immutable'
+import {
+  isString,
+  isFunction
+} from 'lodash'
 
 import { DefineError, schemaValidator, isValidIdentifier } from './utils'
 
@@ -10,9 +12,10 @@ export default function AggregateMethod ({
   name,
   description,
   inputSchema,
+  inputParser,
   handler
 }) {
-  _validateMethodSettings({name, description, inputSchema, handler})
+  _validateMethodSettings({name, description, inputSchema, inputParser, handler})
 
   let method = {}
   Object.setPrototypeOf(method, AggregateMethod.prototype)
@@ -22,16 +25,29 @@ export default function AggregateMethod ({
     description: {value: description || 'No description provided'},
     parseInput: {value: (input) => {
       let validate = inputSchema ? schemaValidator.compile(inputSchema) : () => true
-      let isValidInput = validate(input)
+      let isValidInputAccordingToSchema = validate(input)
 
-      if (!isValidInput) throw new MethodInputNotValidError(schemaValidator.errorsText(validate.errors))
+      if (!isValidInputAccordingToSchema) throw new MethodInputNotValidError(schemaValidator.errorsText(validate.errors))
 
-      return Immutable(input)
+      let parsedInput
+      if (inputParser) {
+        try {
+          parsedInput = Immutable(inputParser(input))
+        } catch (e) {
+          let libError = new MethodInputNotValidError(e.message)
+          libError.originalError = e
+          throw libError
+        }
+      } else {
+        parsedInput = Immutable(input)
+      }
+
+      return parsedInput
     }}
   })
 }
 
-export const _validateMethodSettings = ({name, description, inputSchema, handler}) => {
+export const _validateMethodSettings = ({name, description, inputSchema, inputParser, handler}) => {
   if (!isValidIdentifier(name)) throw new TypeError(`name MUST be a a valid identifier string (see https://mathiasbynens.be/notes/javascript-identifiers-es6), received: ${JSON.stringify(name)}`)
 
   if (description && !isString(description)) throw new TypeError(`description MUST be either falsy or a string`)
@@ -40,5 +56,6 @@ export const _validateMethodSettings = ({name, description, inputSchema, handler
     schemaValidator.compile(inputSchema)
   }
 
+  if (inputParser && !isFunction(inputParser)) throw new TypeError(`inputParser MUST be either falsy or a function`)
   if (!isFunction(handler)) throw new TypeError(`handler MUST be a function`)
 }
