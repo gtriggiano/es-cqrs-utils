@@ -39,9 +39,11 @@ export default function Repository ({
             })
           ]))
           .then(([snapshot, events]) => {
-            let loadedAggregate = aggregate.Factory(aggregate.id, snapshot, events)
+            let loadedAggregate = aggregate.version
+              ? aggregate.appendEvents(events)
+              : aggregate.Factory(aggregate.id, snapshot, events)
 
-            if (snapshotService && loadedAggregate.needsSnapshot) {
+            if (snapshotService && !aggregate.version && loadedAggregate.needsSnapshot) {
               snapshotService.saveSnapshot(loadedAggregate.snapshotKey, {
                 version: loadedAggregate.version,
                 state: loadedAggregate.serializedState
