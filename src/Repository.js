@@ -26,7 +26,7 @@ export default function Repository ({
 
       return Promise.all(
         aggregates.map(aggregate => {
-          let loadSnapshot = snapshotService
+          let loadSnapshot = !aggregate.version && snapshotService
             ? snapshotService.loadSnapshot(aggregate.snapshotKey).catch(() => null)
             : Promise.resolve(null)
 
@@ -35,7 +35,7 @@ export default function Repository ({
             snapshot,
             eventstoreService.getEventsOfStream({
               stream: aggregate.stream,
-              fromVersionNumber: snapshot ? snapshot.version : 0
+              fromVersionNumber: snapshot ? snapshot.version : aggregate.version
             })
           ]))
           .then(([snapshot, events]) => {
@@ -67,24 +67,30 @@ export default function Repository ({
 
       let aggregatesToSave = aggregates.filter(({isDirty}) => isDirty)
 
-      return eventstoreService.appendEventsToMultipleStreams(aggregatesToSave.map(
-        aggregate => ({
-          stream: aggregate.stream,
-          events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
-          expectedVersionNumber:
-            aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
-              ? aggregate.version
-              : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
-                ? -1
-                : -2
+      let appendEvents = aggregatesToSave.length
+        ? eventstoreService.appendEventsToMultipleStreams(
+            aggregatesToSave.map(
+              aggregate => ({
+                stream: aggregate.stream,
+                events: aggregate.newEvents.map(({type, serializedData}) => ({type, data: serializedData})),
+                expectedVersionNumber:
+                  aggregate.persistenceConsistencyPolicy === ENSURE_VERSION_CONSISTENCY
+                    ? aggregate.version
+                    : aggregate.persistenceConsistencyPolicy === AGGREGATE_SHOULD_EXIST
+                      ? -1
+                      : -2
+              })
+            )
+          )
+        : Promise.resolve()
+
+      return appendEvents
+        .then(() => repository.load(aggregates))
+        .catch((eventStoreError) => {
+          let e = new AggregateSavingError()
+          e.originalError = eventStoreError
+          throw e
         })
-      ))
-      .then(() => repository.load(aggregates))
-      .catch((eventStoreError) => {
-        let e = new AggregateSavingError()
-        e.originalError = eventStoreError
-        throw e
-      })
     }}
   })
 }
