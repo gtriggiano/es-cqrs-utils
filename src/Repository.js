@@ -7,7 +7,7 @@ import { DefineError } from './utils'
 import AggregateFactory, { AGGREGATE_SHOULD_EXIST, ENSURE_VERSION_CONSISTENCY } from './AggregateFactory'
 
 export const AggregateLoadingError = DefineError('AggregateLoadingError')
-export const AggregateSavingError = DefineError('AggregateLoadingError')
+export const AggregateSavingError = DefineError('AggregateSavingError')
 
 export default function Repository ({
   eventstoreService,
