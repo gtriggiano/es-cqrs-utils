@@ -148,6 +148,27 @@ describe('method = AggregateMethod(config)', () => {
     })
     should(method.description).equal(`My method description`)
   })
+  it('method.inputSchema is either null or an immutable version of config.inputSchema', () => {
+    let MethodNoSchema = AggregateMethod({
+      name: 'mymethod',
+      handler: () => {}
+    })
+    let aSchema = {
+      properties: {
+        one: {type: 'string'}
+      }
+    }
+    let MethodWithSchema = AggregateMethod({
+      name: 'mymethod',
+      inputSchema: aSchema,
+      handler: () => {}
+    })
+    should(MethodNoSchema.inputSchema).be.Null()
+    should(MethodWithSchema.inputSchema).eql(aSchema)
+    should(() => {
+      MethodWithSchema.inputSchema.properties.two = 'added'
+    }).throw(new RegExp('^Can\'t add property two, object is not extensible'))
+  })
   it('method.parseInput() is a function', () => {
     let method = AggregateMethod({
       name: 'mymethod',

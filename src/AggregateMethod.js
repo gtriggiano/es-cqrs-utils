@@ -23,6 +23,7 @@ export default function AggregateMethod ({
     name: {value: name},
     handler: {value: handler},
     description: {value: description || 'No description provided'},
+    inputSchema: {value: inputSchema ? Immutable(inputSchema) : null},
     parseInput: {value: (input) => {
       let validate = inputSchema ? schemaValidator.compile(inputSchema) : () => true
       let isValidInputAccordingToSchema = validate(input)
