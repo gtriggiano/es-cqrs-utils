@@ -1100,4 +1100,21 @@ describe('aggregate.emit.SomethingHappened(data, consistencyPolicy) behaviour', 
     aggregate.emit.SomethingHappened({}, 'foobarPolicy')
     should(aggregate.persistenceConsistencyPolicy).be.Null()
   })
+  it('if not passed, consistencyPolicy defaults to ENSURE_VERSION_CONSISTENCY', () => {
+    let MyAggregate = AggregateFactory({
+      type: 'MyAggregate',
+      initialState: {},
+      methods: [],
+      errors: [],
+      events: [
+        AggregateEvent({
+          type: 'SomethingHappened',
+          reducer: () => {}
+        })
+      ]
+    })
+    let aggregate = MyAggregate('xyz')
+    aggregate.emit.SomethingHappened({})
+    should(aggregate.persistenceConsistencyPolicy).equal(ENSURE_VERSION_CONSISTENCY)
+  })
 })
