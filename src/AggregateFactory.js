@@ -115,7 +115,7 @@ export default function AggregateFactory ({
     let _newEventsConsistencyPolicy = null
 
     let aggregateEventsEmitters = events.reduce((emitters, Event) =>
-      Object.defineProperty(emitters, Event.type, {value: (data, consistencyPolicy) => {
+      Object.defineProperty(emitters, Event.type, {value: (data, consistencyPolicy = ENSURE_VERSION_CONSISTENCY) => {
         let event = Event(data)
         try {
           _state = _reducer(_state, event)
