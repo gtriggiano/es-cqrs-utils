@@ -38,6 +38,11 @@ export default function Repository ({
               fromVersionNumber: snapshot ? snapshot.version : aggregate.version
             })
           ]))
+          .catch(loadingError => {
+            let e = new AggregateLoadingError()
+            e.originalError = loadingError
+            throw e
+          })
           .then(([snapshot, events]) => {
             let loadedAggregate = aggregate.version
               ? aggregate.appendEvents(events)
@@ -51,11 +56,6 @@ export default function Repository ({
             }
 
             return loadedAggregate
-          })
-          .catch((eventStoreError) => {
-            let e = new AggregateLoadingError()
-            e.originalError = eventStoreError
-            throw e
           })
         })
       )
@@ -87,12 +87,12 @@ export default function Repository ({
         : Promise.resolve()
 
       return appendEvents
-        .then(() => repository.load(aggregates))
-        .catch((eventStoreError) => {
+        .catch(savingError => {
           let e = new AggregateSavingError()
-          e.originalError = eventStoreError
+          e.originalError = savingError
           throw e
         })
+        .then(() => repository.load(aggregates))
     }}
   })
 }
